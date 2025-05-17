@@ -7,8 +7,13 @@ import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
-# Importar utils (si es necesario)
-from utils import set_page_style, check_login
+# Importar utils (solo para los estilos, no para verificar login)
+try:
+    from utils import set_page_style
+except ImportError:
+    # Función básica de estilo si no se puede importar
+    def set_page_style():
+        pass
 
 # Configuración de la página
 st.set_page_config(
@@ -17,10 +22,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# Comprobar si el usuario está logueado (opcional - elimina esto si quieres que About sea accesible sin login)
-if not st.session_state.get("logged_in", False):
-    st.warning("Please log in to access this page.")
-    st.switch_page("pages/1_Login.py")
+# IMPORTANTE: Se ha eliminado la verificación de login
+# Ahora cualquier usuario puede acceder a esta página
 
 # Aplicar estilos personalizados
 st.markdown("""
@@ -75,6 +78,7 @@ st.markdown("<h1 class='main-header'>About the Depression Risk Prediction System
 col1, col2, col3 = st.columns([1, 10, 1])
 
 with col2:
+    # Resto del código igual que antes...
     # Sección de Propósito
     st.markdown("<h2 class='sub-header'>Purpose & Mission</h2>", unsafe_allow_html=True)
     
@@ -204,3 +208,9 @@ with col2:
         <p style="text-align: center;">University Mental Health Services, Office 302</p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Añadir un botón para ir al login (opcional)
+    st.markdown("<div style='text-align: center; margin-top: 30px;'>", unsafe_allow_html=True)
+    if st.button("Login to Access the System", type="primary"):
+        st.switch_page("pages/1_Login.py")
+    st.markdown("</div>", unsafe_allow_html=True)
