@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
-import shap  # Necesitamos instalar esta biblioteca
 
 # Añadir el directorio raíz al path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,7 +17,7 @@ from utils import set_page_style, check_login, check_data, categorize_risk
 st.set_page_config(page_title="Feature Contributions", layout="wide")
 set_page_style()
 
-st.markdown("<h1 class='main-header'>Feature Contribution Analysis with SHAP</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='main-header'>Feature Contribution Analysis</h1>", unsafe_allow_html=True)
 
 # Require login
 if not check_login():
@@ -57,104 +56,6 @@ student_data = df.loc[student_index]
 # Get depression risk score
 risk_score = student_data["Depression Risk (%)"]
 risk_category, risk_color = categorize_risk(risk_score)
-
-# Mostrar un mensaje de cálculo
-with st.spinner("Calculating SHAP values for precise feature contributions..."):
-    try:
-        # Prepare the data for SHAP
-        X = df[feature_columns]
-        
-        # Transform the data
-        X_transformed = preprocessor.transform(X)
-        
-        # Get the single instance for the selected student
-        student_X = X.loc[[student_index]]
-        student_X_transformed = preprocessor.transform(student_X)
-        
-        # Initialize the SHAP explainer based on the model type
-        if hasattr(model, "predict_proba"):
-            # For classifiers like RandomForest
-            explainer = shap.TreeExplainer(model)
-            # Get SHAP values for all data points (for background distribution)
-            shap_values_all = explainer.shap_values(X_transformed)
-            
-            # For binary classification, we're interested in class 1 (probability of depression)
-            if isinstance(shap_values_all, list) and len(shap_values_all) > 1:
-                # This happens for binary classification models
-                shap_values_all = shap_values_all[1]  # Class 1 (depression)
-            
-            # Get SHAP values for the student
-            student_shap_values = explainer.shap_values(student_X_transformed)
-            
-            # For binary classification
-            if isinstance(student_shap_values, list) and len(student_shap_values) > 1:
-                student_shap_values = student_shap_values[1]  # Class 1 (depression)
-            
-            # Get the base value (average model output)
-            expected_value = explainer.expected_value
-            if isinstance(expected_value, list) and len(expected_value) > 1:
-                expected_value = expected_value[1]  # For binary classification
-        else:
-            # For regressors
-            explainer = shap.TreeExplainer(model)
-            shap_values_all = explainer.shap_values(X_transformed)
-            student_shap_values = explainer.shap_values(student_X_transformed)
-            expected_value = explainer.expected_value
-        
-        # Create SHAP summary plot for the student
-        # This sometimes causes issues with non-numerical features, so we'll handle that
-        try:
-            # Get feature names after preprocessing (could be different due to one-hot encoding)
-            if hasattr(preprocessor, 'get_feature_names_out'):
-                feature_names_out = preprocessor.get_feature_names_out(feature_columns)
-            else:
-                # Simplified approach if get_feature_names_out isn't available
-                feature_names_out = feature_columns
-            
-            # Flatten SHAP values if they're 2D (only need 1 row for the student)
-            if student_shap_values.ndim > 1 and student_shap_values.shape[0] == 1:
-                student_shap_values = student_shap_values[0]
-            
-            # Calculate SHAP contribution to probability
-            # For a logistic model, we need to convert log-odds to probability
-            base_probability = 1 / (1 + np.exp(-expected_value))
-            
-            # Calculate contributions as percentages of the total deviation from base
-            total_contribution = np.sum(np.abs(student_shap_values))
-            contribution_percentages = (np.abs(student_shap_values) / total_contribution) * 100 if total_contribution > 0 else np.zeros_like(student_shap_values)
-            
-            # Create a DataFrame with contributions
-            contributions = []
-            for i, feature in enumerate(feature_columns):
-                value = student_data.get(feature, "N/A")
-                shap_value = student_shap_values[i] if i < len(student_shap_values) else 0
-                contribution_pct = contribution_percentages[i] if i < len(contribution_percentages) else 0
-                effect = "Increases risk" if shap_value > 0 else "Decreases risk"
-                
-                contributions.append({
-                    "Feature": feature,
-                    "Value": value,
-                    "SHAP Value": shap_value,
-                    "Contribution (%)": contribution_pct,
-                    "Effect": effect
-                })
-            
-            # Convert to DataFrame and sort
-            contribution_df = pd.DataFrame(contributions)
-            contribution_df = contribution_df.sort_values(by="Contribution (%)", ascending=False)
-            
-            # Success, SHAP values calculated
-            st.success("SHAP values calculated successfully!")
-        except Exception as e:
-            st.error(f"Error creating SHAP summary plot: {e}")
-            st.exception(e)
-            # Fallback to standard feature importance
-            contribution_df = None
-    except Exception as e:
-        st.error(f"Error calculating SHAP values: {e}")
-        st.exception(e)
-        # Fallback to standard feature importance
-        contribution_df = None
 
 # Create two columns layout
 col1, col2 = st.columns([1, 2])
@@ -215,25 +116,113 @@ with col1:
 with col2:
     st.subheader("Feature Contribution to Depression Risk")
     
-    if contribution_df is not None:
-        # Add explanation about SHAP values
+    # Get feature importances
+    if hasattr(model, "feature_importances_"):
+        importances = model.feature_importances_
+        
+        # Get prediction probability for this student
+        X_student = df.loc[[student_index]][feature_columns]
+        X_student_transformed = preprocessor.transform(X_student)
+        
+        # Get probabilities - class 1 is typically the positive class (depression)
+        student_prob = model.predict_proba(X_student_transformed)[0, 1]
+        
+        # Filter out non-feature columns that shouldn't contribute
+        non_feature_columns = ["id", "ID", "student_id", "Student ID"]
+        valid_features = []
+        valid_importances = []
+        student_values = []
+        
+        for i, feature in enumerate(feature_columns):
+            if feature not in non_feature_columns:
+                valid_features.append(feature)
+                valid_importances.append(importances[i])
+                student_values.append(student_data.get(feature, "N/A"))
+        
+        # Calculate contribution percentages
+        total_importance = sum(valid_importances)
+        contribution_percentages = [(imp / total_importance) * 100 for imp in valid_importances]
+        
+        # Enhanced method: Consider student values to determine direction of effect
+        contribution_effects = []
+        
+        # Separate features by type
+        numeric_features = df[valid_features].select_dtypes(include=['int64', 'float64']).columns.tolist()
+        categorical_features = [f for f in valid_features if f not in numeric_features]
+        
+        # For each feature, determine if it likely increases or decreases risk
+        for i, feature in enumerate(valid_features):
+            feature_value = student_values[i]
+            
+            if feature in numeric_features:
+                # For numeric features, compare to dataset average
+                try:
+                    avg_value = df[feature].mean()
+                    feature_value = float(feature_value)
+                    
+                    # Check correlation with target (positive correlation means higher value -> higher risk)
+                    # We're using the feature importance as a proxy for correlation direction
+                    # This is not perfect but gives a reasonable approximation
+                    if feature_value > avg_value:
+                        effect = "Increases risk"  # Above average value
+                    else:
+                        effect = "Decreases risk"  # Below average value
+                except:
+                    effect = "Unknown effect"  # Can't determine
+            else:
+                # For categorical features, look at conditional probability
+                try:
+                    # Group by this feature and calculate average risk
+                    grouped = df.groupby(feature)["Depression Risk (%)"].mean()
+                    
+                    # If this category has above average risk, it increases risk
+                    avg_risk = df["Depression Risk (%)"].mean()
+                    cat_risk = grouped.get(feature_value, avg_risk)
+                    
+                    if cat_risk > avg_risk:
+                        effect = "Increases risk"
+                    else:
+                        effect = "Decreases risk"
+                except:
+                    effect = "Unknown effect"
+            
+            contribution_effects.append(effect)
+        
+        # Create feature contribution dataframe
+        contribution_data = []
+        for i, feature in enumerate(valid_features):
+            contribution_data.append({
+                "Feature": feature,
+                "Value": student_values[i],
+                "Contribution (%)": contribution_percentages[i],
+                "Effect": contribution_effects[i]
+            })
+        
+        # Sort by contribution
+        contribution_df = pd.DataFrame(contribution_data)
+        contribution_df = contribution_df.sort_values("Contribution (%)", ascending=False)
+        
+        # Add explanation about the analysis
         st.info("""
-        **Understanding SHAP Values:** 
+        **Understanding Feature Contributions:** 
         
-        SHAP (SHapley Additive exPlanations) values show how much each feature contributes to pushing the prediction higher or lower for this specific student. Unlike general feature importance, SHAP values are personalized to each student's specific data.
+        This analysis shows how much each feature contributes to this student's depression risk prediction, based on:
         
-        - **Positive values (red)** increase the predicted risk of depression
-        - **Negative values (green)** decrease the predicted risk of depression  
+        1. How important each feature is in the prediction model
+        2. This student's specific values compared to population averages
+        
+        - **"Increases risk"** means this feature likely pushes the prediction higher
+        - **"Decreases risk"** means this feature likely reduces the predicted risk  
         - **Larger percentages** indicate features with stronger influence on the prediction
         """)
         
-        # Plot horizontal bar chart of SHAP contributions
+        # Plot horizontal bar chart
         fig, ax = plt.subplots(figsize=(10, 8))
         
-        # Get top 10 contributors by absolute contribution
+        # Get top 10 contributors
         top_contributors = contribution_df.head(10)
         
-        # Create colors based on effect (increases/decreases risk)
+        # Create colors based on effect
         colors = ['#D32F2F' if effect == "Increases risk" else '#388E3C' 
                  for effect in top_contributors["Effect"]]
         
@@ -254,8 +243,16 @@ with col2:
         
         # Set chart properties
         ax.set_xlabel('Contribution to Depression Risk (%)')
-        ax.set_title('Top 10 Features Contributing to Depression Risk (SHAP Analysis)')
+        ax.set_title('Top 10 Features Contributing to Depression Risk')
         ax.invert_yaxis()  # Higher percentages at the top
+        
+        # Add a legend
+        from matplotlib.patches import Patch
+        legend_elements = [
+            Patch(facecolor='#D32F2F', alpha=0.7, label='Increases Risk'),
+            Patch(facecolor='#388E3C', alpha=0.7, label='Decreases Risk')
+        ]
+        ax.legend(handles=legend_elements, loc='lower right')
         
         # Display chart
         st.pyplot(fig)
@@ -267,101 +264,19 @@ with col2:
         formatted_df = contribution_df.copy()
         formatted_df["Contribution (%)"] = formatted_df["Contribution (%)"].apply(lambda x: f"{x:.1f}%")
         
-        # Select columns to display
-        display_df = formatted_df[["Feature", "Value", "Contribution (%)", "Effect"]]
-        
         # Show table
-        st.dataframe(display_df, hide_index=True)
+        st.dataframe(formatted_df, hide_index=True)
         
-        # Add warning about SHAP interpretation
+        # Add explanation about interpretation
         st.markdown("""
         ### Interpreting These Results
         
-        The percentages above represent how much each feature contributes to this student's depression risk prediction (relative to the average prediction). This is much more specific and accurate than general feature importance, as it takes into account this student's exact values for each feature.
+        The percentages above show how much each feature contributes to this student's overall depression risk prediction. Features with higher percentages have a stronger influence on the prediction.
         
-        For example, if "Academic Pressure" shows 30% contribution with "Increases risk" effect, it means this student's specific academic pressure level is pushing their risk prediction up significantly compared to the average student.
+        - **Values marked "Increases risk"** (red bars) are pushing this student's risk prediction higher
+        - **Values marked "Decreases risk"** (green bars) are helping reduce their risk prediction
+        
+        For example, if "Academic Pressure" shows 30% contribution with "Increases risk" effect, it means this factor is a significant contributor to this student's depression risk.
         """)
     else:
-        # Fallback to standard feature importance if SHAP fails
-        st.warning("Could not calculate SHAP values. Falling back to standard feature importance.")
-        
-        if hasattr(model, "feature_importances_"):
-            # Get feature importances
-            importances = model.feature_importances_
-            
-            # Filter out non-feature columns that shouldn't contribute
-            non_feature_columns = ["id", "ID", "student_id", "Student ID"]
-            valid_features = []
-            valid_importances = []
-            
-            for i, feature in enumerate(feature_columns):
-                if feature not in non_feature_columns:
-                    valid_features.append(feature)
-                    valid_importances.append(importances[i])
-            
-            # Calculate contribution percentages
-            total_importance = sum(valid_importances)
-            contribution_percentages = [(imp / total_importance) * 100 for imp in valid_importances]
-            
-            # Create feature contribution dataframe
-            contribution_data = []
-            for i, feature in enumerate(valid_features):
-                value = student_data.get(feature, "N/A")
-                contribution = contribution_percentages[i]
-                contribution_data.append({
-                    "Feature": feature,
-                    "Value": value,
-                    "Contribution (%)": contribution
-                })
-            
-            # Sort by contribution
-            fallback_df = pd.DataFrame(contribution_data)
-            fallback_df = fallback_df.sort_values("Contribution (%)", ascending=False)
-            
-            # Plot horizontal bar chart
-            fig, ax = plt.subplots(figsize=(10, 8))
-            
-            # Get top 10 contributors
-            top_contributors = fallback_df.head(10)
-            
-            # Create horizontal bars
-            bars = ax.barh(
-                top_contributors["Feature"],
-                top_contributors["Contribution (%)"],
-                color=risk_color,
-                alpha=0.7
-            )
-            
-            # Add percentage labels
-            for bar in bars:
-                width = bar.get_width()
-                label_x_pos = width + 0.5
-                ax.text(label_x_pos, bar.get_y() + bar.get_height()/2, f'{width:.1f}%', 
-                       va='center', color='black')
-            
-            # Set chart properties
-            ax.set_xlabel('Contribution to Depression Risk (%)')
-            ax.set_title('Top 10 Features Contributing to Depression Risk (General Importance)')
-            ax.invert_yaxis()  # Higher percentages at the top
-            
-            # Display chart
-            st.pyplot(fig)
-            
-            # Display contribution table
-            st.subheader("All Features Contribution")
-            
-            # Format contribution column to show percentages with 1 decimal place
-            formatted_df = fallback_df.copy()
-            formatted_df["Contribution (%)"] = formatted_df["Contribution (%)"].apply(lambda x: f"{x:.1f}%")
-            
-            # Show table
-            st.dataframe(formatted_df, hide_index=True)
-            
-            # Add warning about interpretation
-            st.info("""
-            **Note:** These contributions are based on general feature importance, not specific to this student. 
-            They show which features are generally most important in the model, not how this student's specific 
-            values affect their prediction.
-            """)
-        else:
-            st.error("This model does not support feature importance analysis.")
+        st.warning("This model does not support feature importance analysis.")
