@@ -1,5 +1,7 @@
 import streamlit as st
 
+st.warning("Debug: Login page loaded.")
+
 # Set page title
 st.title("Login")
 
