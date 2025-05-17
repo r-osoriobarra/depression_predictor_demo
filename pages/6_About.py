@@ -187,9 +187,3 @@ with col2:
        <p style="text-align: center;">University Mental Health Services, Office 302</p>
    </div>
    """, unsafe_allow_html=True)
-   
-   # Añadir un botón para ir al login (opcional)
-   st.markdown("<div style='text-align: center; margin-top: 30px;'>", unsafe_allow_html=True)
-   if st.button("Login to Access the System", type="primary"):
-       st.switch_page("pages/1_Login.py")
-   st.markdown("</div>", unsafe_allow_html=True)
