@@ -22,11 +22,11 @@ if not st.session_state.logged_in:
         if USERS.get(username) == password:
             st.session_state.logged_in = True
             st.success(f"Welcome, {username}!")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Invalid username or password.")
 else:
     st.success("You are already logged in.")
     if st.button("Log out"):
         st.session_state.logged_in = False
-        st.experimental_rerun()
+        st.rerun()
