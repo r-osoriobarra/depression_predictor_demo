@@ -1,3 +1,6 @@
+import streamlit as st
+
+
 def set_page_style():
     st.markdown("""
     <style>
