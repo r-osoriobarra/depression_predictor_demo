@@ -1,10 +1,8 @@
 # pages/5_FeatureContribution.py
-from utils import set_page_style, check_login, check_data, categorize_risk
 import streamlit as st
 import pandas as pd
 import pickle
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import os
 import sys
@@ -14,12 +12,12 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
 # Importar utils
+from utils import set_page_style, check_login, check_data, categorize_risk
 
 st.set_page_config(page_title="Feature Contributions", layout="wide")
 set_page_style()
 
-st.markdown("<h1 class='main-header'>Feature Importance for Selected Student</h1>",
-            unsafe_allow_html=True)
+st.markdown("<h1 class='main-header'>Feature Contribution Analysis</h1>", unsafe_allow_html=True)
 
 # Require login
 if not check_login():
@@ -34,8 +32,6 @@ if "selected_student_index" not in st.session_state:
     st.stop()
 
 # Load model and preprocessing tools
-
-
 @st.cache_resource
 def load_model():
     with open("model/depression_model.pkl", "rb") as f_model:
@@ -46,7 +42,6 @@ def load_model():
         feature_columns = pickle.load(f_cols)
     return model, preprocessor, feature_columns
 
-
 try:
     model, preprocessor, feature_columns = load_model()
 except Exception as e:
@@ -56,199 +51,116 @@ except Exception as e:
 # Get selected student data
 df = st.session_state["latest_df"]
 student_index = st.session_state["selected_student_index"]
-X_student = df.loc[[student_index]][feature_columns]
+student_data = df.loc[student_index]
 
-# Student risk score
-risk_score = df.loc[student_index]["Depression Risk (%)"]
+# Get depression risk score
+risk_score = student_data["Depression Risk (%)"]
 risk_category, risk_color = categorize_risk(risk_score)
 
-# Display student header
-st.markdown(f"""
-    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-        <h2 style="margin: 0;">Student {student_index} - Depression Risk: 
-        <span style="color: {risk_color};">{round(risk_score, 1)}%</span></h2>
+# Create two columns layout
+col1, col2 = st.columns([1, 2])
+
+# Left column - Student details
+with col1:
+    st.subheader("Student Information")
+    
+    # Show key student attributes
+    info_cards = {
+        "Student ID": student_index,
+        "Gender": student_data.get("Gender", "N/A"),
+        "Age": student_data.get("Age", "N/A"),
+        "CGPA": student_data.get("CGPA", "N/A"),
+        "Degree": student_data.get("Degree", "N/A")
+    }
+    
+    # Create styled info cards
+    for key, value in info_cards.items():
+        st.markdown(f"""
+        <div style="border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin-bottom: 10px;">
+            <p style="margin: 0; color: #666;">{key}</p>
+            <p style="margin: 0; font-size: 18px; font-weight: bold;">{value}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Create risk meter
+    st.subheader("Depression Risk")
+    
+    # Progress bar style based on risk level
+    st.markdown(f"""
+    <div style="border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 10px; background-color: #f9f9f9;">
+        <p style="margin: 0; font-size: 24px; font-weight: bold; color: {risk_color};">{risk_category} Risk: {risk_score:.1f}%</p>
+        <div style="background-color: #e0e0e0; border-radius: 10px; height: 20px; width: 100%; margin-top: 10px;">
+            <div style="background-color: {risk_color}; width: {risk_score}%; height: 20px; border-radius: 10px;"></div>
+        </div>
     </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-# Check for feature importances
-if hasattr(model, "feature_importances_"):
-    try:
-        # Debug output
-        st.write("Model feature importances shape:",
-                 model.feature_importances_.shape)
-        st.write("Feature columns length:", len(feature_columns))
-
-        # Ensure importances match feature columns
+# Right column - Feature Contribution
+with col2:
+    st.subheader("Feature Contribution to Depression Risk")
+    
+    if hasattr(model, "feature_importances_"):
+        # Get feature importances
         importances = model.feature_importances_
-        if len(importances) != len(feature_columns):
-            st.error(
-                f"Feature importances length ({len(importances)}) doesn't match feature columns length ({len(feature_columns)})")
-            st.stop()
-
-        # Get student values, safely convert to strings for display
-        student_values_display = []
-        for col in feature_columns:
-            val = X_student[col].iloc[0]
-            student_values_display.append(str(val))
-
-        # Create simplified contribution analysis
-        feature_data = []
-        for i, col in enumerate(feature_columns):
-            # Get numeric value if possible
-            try:
-                student_val = float(X_student[col].iloc[0])
-            except (ValueError, TypeError):
-                student_val = 0  # Default for non-numeric
-
-            # Check if feature is numeric
-            is_numeric = col in df.select_dtypes(
-                include=['int64', 'float64']).columns
-
-            if is_numeric:
-                # For numeric features, get mean and std
-                avg = df[col].mean()
-                std = df[col].std() if df[col].std() > 0 else 1.0
-                # Calculate relative value
-                rel_val = (student_val - avg) / std
-            else:
-                # For categorical features
-                mode_val = df[col].mode()[0]
-                avg = str(mode_val)
-                # Set relative value to 1 if different from mode, 0 if same
-                rel_val = 1.0 if str(X_student[col].iloc[0]) != str(
-                    mode_val) else 0.0
-
-            # Calculate impact (importance × relative difference)
-            impact = importances[i] * abs(rel_val)
-
-            # Add to list
-            feature_data.append({
-                "Feature": col,
-                "Student Value": student_values_display[i],
-                "Average Value": str(avg) if not is_numeric else avg,
-                "Relative Difference": rel_val,
-                "Feature Importance": importances[i],
-                "Impact": impact
+        
+        # Calculate contribution percentages
+        # This is a simplified approach - we're assuming the model's feature importances
+        # can be directly converted to percentage contributions
+        total_importance = sum(importances)
+        contribution_percentages = [(imp / total_importance) * 100 for imp in importances]
+        
+        # Create feature contribution dataframe
+        contribution_data = []
+        for i, feature in enumerate(feature_columns):
+            value = student_data.get(feature, "N/A")
+            contribution = contribution_percentages[i]
+            contribution_data.append({
+                "Feature": feature,
+                "Value": value,
+                "Contribution (%)": contribution
             })
-
-        # Create dataframe
-        contribution_df = pd.DataFrame(feature_data)
-
-        # Sort by impact
-        contribution_df = contribution_df.sort_values(
-            "Impact", ascending=False)
-
-        # Show top features
-        st.subheader("Top Contributing Features")
-        st.dataframe(contribution_df)
-
-        # Create bar chart of top features
-        fig, ax = plt.subplots(figsize=(12, 8))
-        top_features = contribution_df.head(10)
-
-        # Create horizontal bar chart
-        colors = ['#D32F2F' if v >
-                  0 else '#388E3C' for v in top_features['Relative Difference']]
-        bars = ax.barh(top_features['Feature'],
-                       top_features['Impact'], color=colors)
-
-        # Add labels
-        ax.set_xlabel('Impact on Depression Risk')
+        
+        # Sort by contribution
+        contribution_df = pd.DataFrame(contribution_data)
+        contribution_df = contribution_df.sort_values("Contribution (%)", ascending=False)
+        
+        # Plot horizontal bar chart
+        fig, ax = plt.subplots(figsize=(10, 8))
+        
+        # Get top 10 contributors
+        top_contributors = contribution_df.head(10)
+        
+        # Create horizontal bars
+        bars = ax.barh(
+            top_contributors["Feature"],
+            top_contributors["Contribution (%)"],
+            color=risk_color,
+            alpha=0.7
+        )
+        
+        # Add percentage labels
+        for bar in bars:
+            width = bar.get_width()
+            label_x_pos = width + 0.5
+            ax.text(label_x_pos, bar.get_y() + bar.get_height()/2, f'{width:.1f}%', 
+                   va='center', color='black')
+        
+        # Set chart properties
+        ax.set_xlabel('Contribution to Depression Risk (%)')
         ax.set_title('Top 10 Features Contributing to Depression Risk')
-
-        # Invert y-axis to show highest impact at top
-        ax.invert_yaxis()
-
+        ax.invert_yaxis()  # Higher percentages at the top
+        
+        # Display chart
         st.pyplot(fig)
-
-        # Radar chart for numeric features
-        st.subheader("Student vs Average (Numeric Features)")
-
-        # Get numeric features
-        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
-        numeric_cols = [col for col in numeric_cols if col in feature_columns]
-
-        if len(numeric_cols) >= 3:
-            # Create radar chart data
-            radar_data = contribution_df[contribution_df['Feature'].isin(
-                numeric_cols)].head(6)
-
-            # Convert average and student values to numeric
-            radar_data['Student Numeric'] = pd.to_numeric(
-                radar_data['Student Value'], errors='coerce')
-            radar_data['Average Numeric'] = pd.to_numeric(
-                radar_data['Average Value'], errors='coerce')
-
-            # Replace NaN with 0
-            radar_data = radar_data.fillna(0)
-
-            # Create radar chart
-            categories = radar_data['Feature'].tolist()
-            N = len(categories)
-
-            # Create angles for each axis
-            angles = np.linspace(0, 2*np.pi, N, endpoint=False).tolist()
-            angles += angles[:1]  # Close the loop
-
-            # Get values
-            student_vals = radar_data['Student Numeric'].tolist()
-            student_vals += student_vals[:1]  # Close the loop
-
-            avg_vals = radar_data['Average Numeric'].tolist()
-            avg_vals += avg_vals[:1]  # Close the loop
-
-            # Create plot
-            fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
-
-            # Plot student values
-            ax.plot(angles, student_vals, 'o-', linewidth=2,
-                    color=risk_color, label='Student')
-            ax.fill(angles, student_vals, alpha=0.25, color=risk_color)
-
-            # Plot average values
-            ax.plot(angles, avg_vals, 'o-', linewidth=2,
-                    color='#1E88E5', label='Average')
-            ax.fill(angles, avg_vals, alpha=0.1, color='#1E88E5')
-
-            # Add labels
-            ax.set_xticks(angles[:-1])
-            ax.set_xticklabels(categories)
-
-            # Add legend
-            ax.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-
-            st.pyplot(fig)
-        else:
-            st.info(
-                "Not enough numeric features to create a radar chart. Need at least 3 numeric features.")
-
-        # Explanation
-        st.markdown("""
-        ### Understanding the Analysis
         
-        - **Student Value**: The value for this specific student
-        - **Average Value**: The average across all students (for numeric) or most common value (for categorical)
-        - **Relative Difference**: How different the student's value is from the average (standardized)
-        - **Feature Importance**: How important this feature is in the prediction model
-        - **Impact**: Estimated contribution to this student's depression risk score
+        # Display contribution table
+        st.subheader("All Features Contribution")
         
-        Features with red bars indicate risk factors, while green bars indicate protective factors.
-        """)
-
-    except Exception as e:
-        st.error(f"Error analyzing feature importances: {e}")
-        st.exception(e)
-else:
-    st.warning("This model does not support feature importances.")
-
-    # Show alternative message
-    st.info("""
-    The model doesn't provide direct feature importance information. 
-    
-    In a complete implementation, we could use:
-    1. Permutation importance
-    2. SHAP values
-    3. Partial dependence plots
-    
-    These methods would help identify which features most strongly influence the prediction for this student.
-    """)
+        # Format contribution column to show percentages
+        contribution_df["Contribution (%)"] = contribution_df["Contribution (%)"].apply(lambda x: f"{x:.1f}%")
+        
+        # Show table
+        st.dataframe(contribution_df, hide_index=True)
+        
+    else:
+        st.warning("This model does not support feature importance analysis.")
