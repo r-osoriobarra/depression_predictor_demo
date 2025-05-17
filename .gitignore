@@ -1,1 +1,8 @@
+src/
+data/
 images/
+train_and_export_model.py
+main.py
+*.ipynb
+*.csv
+*.log
