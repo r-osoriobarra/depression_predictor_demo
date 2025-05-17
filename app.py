@@ -15,8 +15,8 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-header {color:#1E88E5; font-size:42px; font-weight:bold; text-align:center; margin-bottom:30px;}
-    .sub-header {color:#0D47A1; font-size:28px; font-weight:bold; margin-top:20px;}
-    .welcome-text {font-size:18px; margin-bottom:30px;}
+    .sub-header {color:#0D47A1; font-size:28px; font-weight:bold; margin-top:20px; text-align:center; margin-bottom:20px;}
+    .welcome-text {font-size:18px; margin-bottom:30px; text-align:center;}
     .step-container {
         background-color: #000000; 
         padding: 20px; 
@@ -54,10 +54,10 @@ st.markdown("""
 # Título principal
 st.markdown("<h1 class='main-header'>Student Depression Risk Prediction System</h1>", unsafe_allow_html=True)
 
-# Texto de bienvenida
+# Texto de bienvenida (centrado)
 st.markdown("<p class='welcome-text'>Welcome to the Student Depression Risk Prediction System, a tool designed to help university wellness coordinators identify students who may be at risk of depression. Early identification allows for timely intervention and support, helping students maintain their mental well-being throughout their academic journey.</p>", unsafe_allow_html=True)
 
-# Pasos para usar la aplicación
+# Pasos para usar la aplicación (título centrado)
 st.markdown("<h2 class='sub-header'>How to Use This System</h2>", unsafe_allow_html=True)
 
 # Crear una columna central para limitar la anchura de los pasos y centrarlos
