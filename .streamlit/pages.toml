@@ -1,0 +1,9 @@
+# .streamlit/pages.toml
+
+[pages]
+"app.py" = {name = "Main", icon = "🏠"}
+"pages/1_Login.py" = {name = "Login", icon = "🔑"}
+"pages/2_Overview.py" = {name = "Overview", icon = "📊"}
+"pages/3_StudentList.py" = {name = "Student List", icon = "📋"}
+"pages/4_StudentDetail.py" = {name = "Student Details", icon = "👤"}
+"pages/5_FeatureContribution.py" = {name = "Analysis", icon = "📈"}
