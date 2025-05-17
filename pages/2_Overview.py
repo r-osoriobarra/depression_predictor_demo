@@ -5,6 +5,9 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from utils import set_page_style, check_login
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent_dir)
 
 st.set_page_config(page_title="Overview", layout="wide")
 set_page_style()

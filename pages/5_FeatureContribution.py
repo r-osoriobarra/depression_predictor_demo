@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from utils import set_page_style, check_login, check_data, categorize_risk
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent_dir)
 
 st.set_page_config(page_title="Feature Contributions", layout="wide")
 set_page_style()

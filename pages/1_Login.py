@@ -1,9 +1,10 @@
 # pages/1_Login.py
-import streamlit as st
 from utils import set_page_style
-
-# Aplicar estilos consistentes
-set_page_style()
+import streamlit as st
+import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent_dir)
 
 # Set page title
 st.markdown("<h1 class='main-header'>Login</h1>", unsafe_allow_html=True)
@@ -19,15 +20,9 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = None
 
-# Login form with improved styling
+# Login form with simplified styling - ELIMINADO EL CUADRO BLANCO
 if not st.session_state.logged_in:
-    st.markdown("""
-    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; max-width: 500px;">
-        <h2 style="color: #1E88E5; margin-bottom: 20px;">User Authentication</h2>
-        <p>Please enter your credentials to access the system.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
+    # Eliminamos el div con fondo blanco y simplificamos
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
