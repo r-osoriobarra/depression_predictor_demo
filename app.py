@@ -1,9 +1,9 @@
-from utils import set_page_style
 import streamlit as st
 import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from utils import set_page_style
 
 # Configure the page
 st.set_page_config(
@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# Add style from utils.py
+# Aplicar estilos consistentes
 set_page_style()
 
 st.markdown("<h1 class='main-header'>Student Depression Risk Dashboard</h1>",
@@ -33,11 +33,14 @@ def load_model():
 
 
 # Load resources
-model, preprocessor, feature_columns = load_model()
+try:
+    model, preprocessor, feature_columns = load_model()
+    st.success("✅ Model, preprocessor, and feature list loaded successfully.")
+except Exception as e:
+    st.error(f"Error loading model: {e}")
+    st.info("Please ensure the model files are available in the 'model/' directory.")
 
-st.success("✅ Model, preprocessor, and feature list loaded successfully.")
-
-# Main information
+# Información principal
 st.markdown("""
 ## Welcome to the Student Depression Risk Prediction System
 
@@ -53,21 +56,24 @@ The system uses machine learning to analyze student data and provide risk assess
 
 """)
 
-# If there is data uploaded, show basic graphs
+# Si hay datos cargados, mostrar algunos gráficos básicos
 if "latest_df" in st.session_state:
     st.markdown("<h2 class='sub-header'>Quick Dashboard</h2>",
                 unsafe_allow_html=True)
 
     df = st.session_state["latest_df"]
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        # Risk distribution
-        fig, ax = plt.subplots(figsize=(10, 6))
+    # Crear categorías de riesgo si no existen
+    if "Risk Category" not in df.columns:
         df['Risk Category'] = pd.cut(df['Depression Risk (%)'],
                                      bins=[0, 30, 60, 100],
                                      labels=['Low', 'Medium', 'High'])
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Distribución de riesgo
+        fig, ax = plt.subplots(figsize=(10, 6))
         risk_counts = df['Risk Category'].value_counts()
         colors = ['#388E3C', '#F57C00', '#D32F2F']
         risk_counts.plot(kind='pie', autopct='%1.1f%%', colors=colors, ax=ax)
@@ -75,11 +81,14 @@ if "latest_df" in st.session_state:
         st.pyplot(fig)
 
     with col2:
-        # Avg risk by gender
-        fig, ax = plt.subplots(figsize=(10, 6))
-        gender_risk = df.groupby(
-            'Gender')['Depression Risk (%)'].mean().reset_index()
-        sns.barplot(x='Gender', y='Depression Risk (%)',
-                    data=gender_risk, ax=ax)
-        plt.title('Average Depression Risk by Gender')
-        st.pyplot(fig)
+        # Riesgo promedio por género (si está disponible)
+        if 'Gender' in df.columns:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            gender_risk = df.groupby(
+                'Gender')['Depression Risk (%)'].mean().reset_index()
+            sns.barplot(x='Gender', y='Depression Risk (%)',
+                        data=gender_risk, ax=ax)
+            plt.title('Average Depression Risk by Gender')
+            st.pyplot(fig)
+        else:
+            st.info("Gender data not available for visualization.")
