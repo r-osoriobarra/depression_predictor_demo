@@ -76,7 +76,7 @@ with col2:
     st.markdown("""
     <div class="step-container">
         <h3><span class="step-number">2</span> Upload Student Data</h3>
-        <p>On the Overview page, upload your student data file (CSV format). The system will process this data and calculate depression risk scores for each student.</p>
+        <p>On the Predict page, upload your student data file (CSV format). The system will process this data and calculate depression risk scores for each student.</p>
     </div>
     """, unsafe_allow_html=True)
 
