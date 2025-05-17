@@ -172,29 +172,38 @@ with col2:
    # Sección de Equipo (opcional)
    st.markdown("<h2 class='sub-header'>Development Team</h2>", unsafe_allow_html=True)
    
-   st.markdown("""
-   <div class="team-section">
+   # Usando cuatro columnas separadas en lugar de un div contenedor
+   team_col1, team_col2 = st.columns(2)
+   
+   with team_col1:
+       st.markdown("""
        <div class="team-member">
            <h3>Lead Developer</h3>
            <p>Responsible for the overall architecture and development of the system, including the machine learning model and web application.</p>
        </div>
+       """, unsafe_allow_html=True)
        
-       <div class="team-member">
-           <h3>Data Scientist</h3>
-           <p>Conducted data analysis, feature engineering, and model training to ensure accurate risk predictions.</p>
-       </div>
-       
+       st.markdown("""
        <div class="team-member">
            <h3>UX Designer</h3>
            <p>Designed the user interface with a focus on clarity, accessibility, and intuitive navigation for wellness coordinators.</p>
        </div>
+       """, unsafe_allow_html=True)
+   
+   with team_col2:
+       st.markdown("""
+       <div class="team-member">
+           <h3>Data Scientist</h3>
+           <p>Conducted data analysis, feature engineering, and model training to ensure accurate risk predictions.</p>
+       </div>
+       """, unsafe_allow_html=True)
        
+       st.markdown("""
        <div class="team-member">
            <h3>Mental Health Consultant</h3>
            <p>Provided expertise in depression risk factors, appropriate interventions, and ethical considerations for the system.</p>
        </div>
-   </div>
-   """, unsafe_allow_html=True)
+       """, unsafe_allow_html=True)
    
    # Sección de Contacto
    st.markdown("<h2 class='sub-header'>Contact & Support</h2>", unsafe_allow_html=True)
