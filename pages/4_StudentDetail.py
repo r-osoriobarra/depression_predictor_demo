@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import os
 from utils import set_page_style, check_login, check_data, categorize_risk
 import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
