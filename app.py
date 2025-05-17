@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# Añadir estilo (importando de utils.py)
+# Add style from utils.py
 set_page_style()
 
 st.markdown("<h1 class='main-header'>Student Depression Risk Dashboard</h1>",
@@ -37,7 +37,7 @@ model, preprocessor, feature_columns = load_model()
 
 st.success("✅ Model, preprocessor, and feature list loaded successfully.")
 
-# Información principal
+# Main information
 st.markdown("""
 ## Welcome to the Student Depression Risk Prediction System
 
@@ -53,7 +53,7 @@ The system uses machine learning to analyze student data and provide risk assess
 
 """)
 
-# Si hay datos cargados, mostrar algunos gráficos básicos
+# If there is data uploaded, show basic graphs
 if "latest_df" in st.session_state:
     st.markdown("<h2 class='sub-header'>Quick Dashboard</h2>",
                 unsafe_allow_html=True)
@@ -63,7 +63,7 @@ if "latest_df" in st.session_state:
     col1, col2 = st.columns(2)
 
     with col1:
-        # Distribución de riesgo
+        # Risk distribution
         fig, ax = plt.subplots(figsize=(10, 6))
         df['Risk Category'] = pd.cut(df['Depression Risk (%)'],
                                      bins=[0, 30, 60, 100],
@@ -75,7 +75,7 @@ if "latest_df" in st.session_state:
         st.pyplot(fig)
 
     with col2:
-        # Riesgo promedio por género
+        # Avg risk by gender
         fig, ax = plt.subplots(figsize=(10, 6))
         gender_risk = df.groupby(
             'Gender')['Depression Risk (%)'].mean().reset_index()
