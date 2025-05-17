@@ -1,237 +1,91 @@
 # app.py
 import streamlit as st
-import pickle
-import pandas as pd
-import plotly.express as px
 import os
 import sys
-
-# Añadir el directorio raíz al path
-parent_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(parent_dir)
-
-# Importar utils
-from utils import set_page_style
 
 # Configure the page
 st.set_page_config(
     page_title="Student Depression Risk Predictor",
     page_icon="🧠",
     layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Aplicar estilos consistentes
-set_page_style()
-
-st.markdown("<h1 class='main-header'>Student Depression Risk Dashboard</h1>", unsafe_allow_html=True)
-
-# Load model and preprocessor
-@st.cache_resource
-def load_model():
-    with open("model/depression_model.pkl", "rb") as f_model:
-        model = pickle.load(f_model)
-    with open("model/preprocessor.pkl", "rb") as f_pre:
-        preprocessor = pickle.load(f_pre)
-    with open("model/feature_columns.pkl", "rb") as f_cols:
-        feature_columns = pickle.load(f_cols)
-    return model, preprocessor, feature_columns
-
-# Load resources
-try:
-    model, preprocessor, feature_columns = load_model()
-    st.success("✅ Model, preprocessor, and feature list loaded successfully.")
-except Exception as e:
-    st.error(f"Error loading model: {e}")
-    st.info("Please ensure the model files are available in the 'model/' directory.")
-
-# Información principal
+# Aplicar estilos personalizados
 st.markdown("""
-## Welcome to the Student Depression Risk Prediction System
+<style>
+    .main-header {color:#1E88E5; font-size:42px; font-weight:bold; text-align:center; margin-bottom:30px;}
+    .sub-header {color:#0D47A1; font-size:28px; font-weight:bold; margin-top:20px;}
+    .welcome-text {font-size:18px; margin-bottom:30px;}
+    .banner-container {text-align:center; margin-bottom:30px;}
+    .step-container {background-color:#f5f5f5; padding:20px; border-radius:10px; margin-bottom:20px;}
+    .step-number {background-color:#1E88E5; color:white; padding:5px 12px; border-radius:50%; margin-right:10px; font-weight:bold;}
+    .login-button {text-align:center; margin-top:40px; margin-bottom:30px;}
+</style>
+""", unsafe_allow_html=True)
 
-This application is designed to help university wellness coordinators identify students who may be at risk of depression. 
-The system uses machine learning to analyze student data and provide risk assessments.
+# Banner/imagen en la parte superior
+st.markdown("""
+<div class="banner-container">
+    <img src="https://img.freepik.com/free-vector/mental-health-awareness-concept_23-2148527732.jpg?w=1380&t=st=1701290147~exp=1701290747~hmac=d3da4071dfe4d89fc10db9dfa47c9e9bee8eb4a2cc14288d69b66e8e14a49574" alt="Mental Health Banner" style="max-width:800px; width:100%;">
+</div>
+""", unsafe_allow_html=True)
 
-### How to use this dashboard:
-1. **Login** - Use your credentials to access the system
-2. **Overview** - Upload student data and see aggregate statistics
-3. **Student List** - View all students and their risk levels
-4. **Student Detail** - Analyze individual student risk factors
-5. **Feature Contribution** - Understand what factors contribute to risk
+# Título principal
+st.markdown("<h1 class='main-header'>Student Depression Risk Prediction System</h1>", unsafe_allow_html=True)
 
-""")
+# Texto de bienvenida
+st.markdown("<p class='welcome-text'>Welcome to the Student Depression Risk Prediction System, a tool designed to help university wellness coordinators identify students who may be at risk of depression. Early identification allows for timely intervention and support, helping students maintain their mental well-being throughout their academic journey.</p>", unsafe_allow_html=True)
 
-# Si hay datos cargados, mostrar algunos gráficos básicos
-if "latest_df" in st.session_state:
-    st.markdown("<h2 class='sub-header'>Quick Dashboard</h2>", unsafe_allow_html=True)
-    
-    df = st.session_state["latest_df"]
-    
-    # Crear categorías de riesgo si no existen
-    if "Risk Category" not in df.columns:
-        df['Risk Category'] = pd.cut(df['Depression Risk (%)'], 
-                                    bins=[0, 30, 60, 100], 
-                                    labels=['Low', 'Medium', 'High'])
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Distribución de riesgo con gráfico de pastel interactivo de Plotly
-        risk_counts = df['Risk Category'].value_counts().reset_index()
-        risk_counts.columns = ['Risk Category', 'Count']
-        
-        # Definir colores para cada categoría
-        color_map = {'Low': '#388E3C', 'Medium': '#F57C00', 'High': '#D32F2F'}
-        
-        # Crear gráfico de pastel interactivo
-        fig = px.pie(
-            risk_counts, 
-            values='Count', 
-            names='Risk Category',
-            title='Distribution of Depression Risk Levels',
-            color='Risk Category',
-            color_discrete_map=color_map,
-            hole=0.4  # Donut chart
-        )
-        
-        # Mejorar diseño
-        fig.update_traces(textposition='inside', textinfo='percent+label')
-        fig.update_layout(
-            legend_title="Risk Category",
-            font=dict(size=14),
-            hoverlabel=dict(font_size=14)
-        )
-        
-        # Mostrar gráfico
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        # Riesgo promedio por género con gráfico de barras interactivo (si está disponible)
-        if 'Gender' in df.columns:
-            # Calcular promedio por género
-            gender_risk = df.groupby('Gender')['Depression Risk (%)'].mean().reset_index()
-            
-            # Crear gráfico de barras interactivo
-            fig = px.bar(
-                gender_risk,
-                x='Gender',
-                y='Depression Risk (%)',
-                title='Average Depression Risk by Gender',
-                text_auto='.1f',  # Mostrar valores en las barras con 1 decimal
-                color='Depression Risk (%)',
-                color_continuous_scale=['#4CAF50', '#FFC107', '#F44336']
-            )
-            
-            # Mejorar diseño
-            fig.update_traces(textposition='outside')
-            fig.update_layout(
-                xaxis_title="Gender",
-                yaxis_title="Average Depression Risk (%)",
-                font=dict(size=14),
-                hoverlabel=dict(font_size=14)
-            )
-            
-            # Mostrar gráfico
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            # Si no hay datos de género, mostrar otra visualización útil
-            # Por ejemplo, distribución de edades si está disponible
-            if 'Age' in df.columns:
-                fig = px.histogram(
-                    df, 
-                    x='Age',
-                    color='Risk Category',
-                    color_discrete_map=color_map,
-                    title='Age Distribution by Risk Category',
-                    nbins=20
-                )
-                
-                fig.update_layout(
-                    xaxis_title="Age",
-                    yaxis_title="Count",
-                    font=dict(size=14),
-                    hoverlabel=dict(font_size=14)
-                )
-                
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("Gender and Age data not available for visualization.")
-    
-    # Añadir un tercer gráfico debajo (opcional)
-    if 'CGPA' in df.columns:
-        # Gráfico de dispersión para CGPA vs Risk
-        fig = px.scatter(
-            df,
-            x='CGPA',
-            y='Depression Risk (%)',
-            color='Risk Category',
-            color_discrete_map=color_map,
-            title='Relationship between CGPA and Depression Risk',
-            hover_data=['Gender', 'Age'] if 'Gender' in df.columns and 'Age' in df.columns else None,
-            trendline="ols"  # Añadir línea de tendencia
-        )
-        
-        fig.update_layout(
-            xaxis_title="CGPA",
-            yaxis_title="Depression Risk (%)",
-            font=dict(size=14),
-            hoverlabel=dict(font_size=14)
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-    # Añadir una sección con métricas clave si hay suficientes datos
-    if len(df) > 0:
-        st.markdown("<h2 class='sub-header'>Key Metrics</h2>", unsafe_allow_html=True)
-        
-        # Crear 3 columnas para métricas
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            # Total de estudiantes
-            st.metric(
-                label="Total Students", 
-                value=len(df)
-            )
-        
-        with col2:
-            # Promedio de riesgo
-            avg_risk = df["Depression Risk (%)"].mean()
-            st.metric(
-                label="Average Risk", 
-                value=f"{avg_risk:.1f}%"
-            )
-        
-        with col3:
-            # Estudiantes de alto riesgo
-            high_risk = (df["Risk Category"] == "High").sum()
-            high_risk_pct = (high_risk / len(df)) * 100
-            st.metric(
-                label="High Risk Students", 
-                value=high_risk,
-                delta=f"{high_risk_pct:.1f}%"
-            )
-        
-        with col4:
-            # Estudiantes de bajo riesgo
-            low_risk = (df["Risk Category"] == "Low").sum()
-            low_risk_pct = (low_risk / len(df)) * 100
-            st.metric(
-                label="Low Risk Students", 
-                value=low_risk,
-                delta=f"{low_risk_pct:.1f}%"
-            )
-else:
-    # Si no hay datos, mostrar información sobre cómo empezar
-    st.info("""
-    ### Getting Started
-    
-    To use this system:
-    1. **Login** using the provided credentials (see the Login page)
-    2. **Upload student data** on the Overview page
-    3. **Explore** risk levels and details
-    
-    The system will populate this dashboard with visualizations once data is loaded.
-    """)
+# Pasos para usar la aplicación
+st.markdown("<h2 class='sub-header'>How to Use This System</h2>", unsafe_allow_html=True)
+
+# Paso 1
+st.markdown("""
+<div class="step-container">
+    <h3><span class="step-number">1</span> Login</h3>
+    <p>Access the system using your provided credentials. Click the "Login" button below or use the navigation menu on the left.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Paso 2
+st.markdown("""
+<div class="step-container">
+    <h3><span class="step-number">2</span> Upload Student Data</h3>
+    <p>On the Overview page, upload your student data file (CSV format). The system will process this data and calculate depression risk scores for each student.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Paso 3
+st.markdown("""
+<div class="step-container">
+    <h3><span class="step-number">3</span> Explore Student Risk Levels</h3>
+    <p>View the list of students organized by risk level. The system categorizes students into Low, Medium, and High risk groups based on their calculated risk score.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Paso 4
+st.markdown("""
+<div class="step-container">
+    <h3><span class="step-number">4</span> Analyze Individual Students</h3>
+    <p>Select any student to view their detailed profile, including specific risk factors and personalized recommendations for support.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Paso 5
+st.markdown("""
+<div class="step-container">
+    <h3><span class="step-number">5</span> Understand Contributing Factors</h3>
+    <p>For each student, analyze which factors contribute most to their depression risk score. This insight helps in developing targeted intervention strategies.</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Botón de Login que redirige a la página de login
+st.markdown("<div class='login-button'>", unsafe_allow_html=True)
+if st.button("Login to Get Started", use_container_width=False, type="primary"):
+    # Redireccionar a la página de login
+    st.switch_page("pages/1_Login.py")
+st.markdown("</div>", unsafe_allow_html=True)
 
 # Información adicional en la parte inferior
 with st.expander("About This System"):
