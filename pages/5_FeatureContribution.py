@@ -72,235 +72,133 @@ st.markdown(f"""
 
 # Check for feature importances
 if hasattr(model, "feature_importances_"):
-    # Asegúrate de que importances sea un array de NumPy de tipo float
-    importances = np.array(model.feature_importances_, dtype=float)
+    try:
+        # Debug output
+        st.write("Model feature importances shape:",
+                 model.feature_importances_.shape)
+        st.write("Feature columns length:", len(feature_columns))
 
-    # Get student values as a list first to handle mixed types
-    student_values_list = X_student.values[0].tolist()
+        # Ensure importances match feature columns
+        importances = model.feature_importances_
+        if len(importances) != len(feature_columns):
+            st.error(
+                f"Feature importances length ({len(importances)}) doesn't match feature columns length ({len(feature_columns)})")
+            st.stop()
 
-    # Separate numeric and categorical columns
-    numeric_cols = df[feature_columns].select_dtypes(
-        include=['int64', 'float64']).columns
-    categorical_cols = df[feature_columns].select_dtypes(
-        exclude=['int64', 'float64']).columns
+        # Get student values, safely convert to strings for display
+        student_values_display = []
+        for col in feature_columns:
+            val = X_student[col].iloc[0]
+            student_values_display.append(str(val))
 
-    # Initialize lists for average values and relative values
-    avg_values_list = []
-    relative_values_list = []
-
-    # Calculate averages and relative values for each column
-    for i, col in enumerate(feature_columns):
-        if col in numeric_cols:
-            # For numeric columns, use mean and standard deviation
-            avg = df[col].mean()
-            std = df[col].std()
-            avg_values_list.append(avg)
-
-            # Get student value, ensuring it's a number
-            student_val = student_values_list[i]
+        # Create simplified contribution analysis
+        feature_data = []
+        for i, col in enumerate(feature_columns):
+            # Get numeric value if possible
             try:
-                student_val = float(student_val)
+                student_val = float(X_student[col].iloc[0])
             except (ValueError, TypeError):
-                student_val = 0.0
-                student_values_list[i] = 0.0
+                student_val = 0  # Default for non-numeric
 
-            # Avoid division by zero
-            if std > 0:
-                relative_values_list.append((student_val - avg) / std)
+            # Check if feature is numeric
+            is_numeric = col in df.select_dtypes(
+                include=['int64', 'float64']).columns
+
+            if is_numeric:
+                # For numeric features, get mean and std
+                avg = df[col].mean()
+                std = df[col].std() if df[col].std() > 0 else 1.0
+                # Calculate relative value
+                rel_val = (student_val - avg) / std
             else:
-                relative_values_list.append(0.0)
-        else:
-            # For categorical columns, compare with most frequent value
-            # Get the most frequent value in the column
-            mode_value = df[col].mode()[0]
-            avg_values_list.append(0.0)  # Placeholder for categorical
+                # For categorical features
+                mode_val = df[col].mode()[0]
+                avg = str(mode_val)
+                # Set relative value to 1 if different from mode, 0 if same
+                rel_val = 1.0 if str(X_student[col].iloc[0]) != str(
+                    mode_val) else 0.0
 
-            # Compare values as strings
-            if str(student_values_list[i]) != str(mode_value):
-                relative_values_list.append(1.0)
-            else:
-                relative_values_list.append(0.0)
+            # Calculate impact (importance × relative difference)
+            impact = importances[i] * abs(rel_val)
 
-    # Convert importances to a list for safe processing
-    importances_list = importances.tolist()
+            # Add to list
+            feature_data.append({
+                "Feature": col,
+                "Student Value": student_values_display[i],
+                "Average Value": str(avg) if not is_numeric else avg,
+                "Relative Difference": rel_val,
+                "Feature Importance": importances[i],
+                "Impact": impact
+            })
 
-    # Calculate estimated impact
-    estimated_impact_list = []
-    for i in range(len(feature_columns)):
-        estimated_impact_list.append(
-            importances_list[i] * abs(relative_values_list[i]))
+        # Create dataframe
+        contribution_df = pd.DataFrame(feature_data)
 
-    # Create dataframe with feature importances and values
-    contribution_df = pd.DataFrame({
-        "Feature": feature_columns,
-        "Student Value": student_values_list,
-        "Avg Value": avg_values_list,
-        "Relative Value": relative_values_list,
-        "Feature Importance": importances_list,
-        "Estimated Impact": estimated_impact_list
-    }).sort_values("Estimated Impact", ascending=False)
+        # Sort by impact
+        contribution_df = contribution_df.sort_values(
+            "Impact", ascending=False)
 
-    # Display tabs for different visualizations
-    tab1, tab2 = st.tabs(["Feature Impact", "Comparison with Average"])
+        # Show top features
+        st.subheader("Top Contributing Features")
+        st.dataframe(contribution_df)
 
-    with tab1:
-        col1, col2 = st.columns([2, 1])
+        # Create bar chart of top features
+        fig, ax = plt.subplots(figsize=(12, 8))
+        top_features = contribution_df.head(10)
 
-        with col1:
-            # Create a horizontal bar chart for feature impact
-            fig, ax = plt.subplots(figsize=(12, 8))
+        # Create horizontal bar chart
+        colors = ['#D32F2F' if v >
+                  0 else '#388E3C' for v in top_features['Relative Difference']]
+        bars = ax.barh(top_features['Feature'],
+                       top_features['Impact'], color=colors)
 
-            # Create bars with colors based on whether the feature is higher or lower than average
-            colors = [
-                '#D32F2F' if rv > 0 else '#388E3C' for rv in contribution_df['Relative Value']]
+        # Add labels
+        ax.set_xlabel('Impact on Depression Risk')
+        ax.set_title('Top 10 Features Contributing to Depression Risk')
 
-            # Plot horizontal bar chart of estimated impact
-            bars = ax.barh(
-                contribution_df["Feature"],
-                contribution_df["Estimated Impact"],
-                color=colors
-            )
+        # Invert y-axis to show highest impact at top
+        ax.invert_yaxis()
 
-            # Add student values as text
-            for i, bar in enumerate(bars):
-                width = bar.get_width()
-                label_pos = width + 0.01
-                rel_val = contribution_df['Relative Value'].iloc[i]
-                direction = "different" if rel_val > 0 else "similar"
+        st.pyplot(fig)
 
-                # Format the student value based on whether it's numeric or categorical
-                feat = contribution_df['Feature'].iloc[i]
-                if feat in numeric_cols:
-                    try:
-                        val_text = f"{float(contribution_df['Student Value'].iloc[i]):.2f} ({direction} than avg)"
-                    except (ValueError, TypeError):
-                        val_text = f"{contribution_df['Student Value'].iloc[i]} ({direction} than avg)"
-                else:
-                    val_text = f"{contribution_df['Student Value'].iloc[i]} ({direction} to most common)"
+        # Radar chart for numeric features
+        st.subheader("Student vs Average (Numeric Features)")
 
-                ax.text(
-                    label_pos,
-                    bar.get_y() + bar.get_height()/2,
-                    val_text,
-                    va='center'
-                )
+        # Get numeric features
+        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
+        numeric_cols = [col for col in numeric_cols if col in feature_columns]
 
-            # Add labels and title
-            ax.set_xlabel('Estimated Impact on Depression Risk')
-            ax.set_title('Estimated Impact of Each Feature on Depression Risk')
+        if len(numeric_cols) >= 3:
+            # Create radar chart data
+            radar_data = contribution_df[contribution_df['Feature'].isin(
+                numeric_cols)].head(6)
 
-            # Sort bars by impact
-            ax.invert_yaxis()  # To match the sort order in the dataframe
+            # Convert average and student values to numeric
+            radar_data['Student Numeric'] = pd.to_numeric(
+                radar_data['Student Value'], errors='coerce')
+            radar_data['Average Numeric'] = pd.to_numeric(
+                radar_data['Average Value'], errors='coerce')
 
-            plt.tight_layout()
-            st.pyplot(fig)
-
-        with col2:
-            st.markdown(
-                "<h3 class='sub-header'>Top Contributing Factors</h3>", unsafe_allow_html=True)
-
-            # Top 5 contributing factors
-            top_factors = contribution_df.head(5)
-
-            for i, (_, row) in enumerate(top_factors.iterrows()):
-                feat = row["Feature"]
-                is_numeric = feat in numeric_cols
-
-                if is_numeric:
-                    direction = "higher" if row["Relative Value"] > 0 else "lower"
-                    try:
-                        avg_text = f"{float(row['Avg Value']):.2f}"
-                    except (ValueError, TypeError):
-                        avg_text = f"{row['Avg Value']}"
-
-                    compare_text = f"({direction} than average: {avg_text})"
-
-                    try:
-                        value_text = f"{float(row['Student Value']):.2f}"
-                    except (ValueError, TypeError):
-                        value_text = f"{row['Student Value']}"
-                else:
-                    direction = "different from" if row["Relative Value"] > 0 else "same as"
-                    compare_text = f"({direction} most common)"
-                    value_text = f"{row['Student Value']}"
-
-                color = '#D32F2F' if row['Relative Value'] > 0 else '#388E3C'
-
-                # Calcular ancho de barra de forma segura
-                max_impact = contribution_df['Estimated Impact'].max()
-                if max_impact > 0:
-                    bar_width = row['Estimated Impact'] / max_impact * 100
-                else:
-                    bar_width = 0
-
-                st.markdown(f"""
-                    <div style="margin-bottom: 15px;">
-                        <h4 style="margin: 0; color: {color};">
-                            {i+1}. {row['Feature']}
-                        </h4>
-                        <p>Student value: <b>{value_text}</b> {compare_text}</p>
-                        <div style="width: 100%; background-color: #e0e0e0; height: 10px; border-radius: 5px;">
-                            <div style="width: {bar_width}%; 
-                                 background-color: {color}; 
-                                 height: 10px; border-radius: 5px;">
-                            </div>
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-    with tab2:
-        # We need to adapt the radar chart for mixed data types
-        st.markdown(
-            "<h3 class='sub-header'>Student vs Average Comparison</h3>", unsafe_allow_html=True)
-
-        # For the radar chart, we'll use only numeric features
-        numeric_feature_cols = [
-            col for col in feature_columns if col in numeric_cols]
-
-        if len(numeric_feature_cols) >= 3:  # Need at least 3 features for a meaningful radar chart
-            # Select top features for readability
-            top_n_features = st.slider("Number of numeric features to display:",
-                                       min_value=3, max_value=min(10, len(numeric_feature_cols)),
-                                       value=min(8, len(numeric_feature_cols)))
-
-            # Get top n numeric features by importance
-            numeric_contribution_df = contribution_df[contribution_df["Feature"].isin(
-                numeric_feature_cols)]
-            top_features = numeric_contribution_df.nlargest(
-                top_n_features, "Feature Importance")
+            # Replace NaN with 0
+            radar_data = radar_data.fillna(0)
 
             # Create radar chart
-            categories = top_features["Feature"].tolist()
+            categories = radar_data['Feature'].tolist()
             N = len(categories)
 
             # Create angles for each axis
             angles = np.linspace(0, 2*np.pi, N, endpoint=False).tolist()
             angles += angles[:1]  # Close the loop
 
-            # Get student values and average values for selected numeric features
-            student_vals = []
-            avg_vals = []
+            # Get values
+            student_vals = radar_data['Student Numeric'].tolist()
+            student_vals += student_vals[:1]  # Close the loop
 
-            for feat in categories:
-                idx = contribution_df[contribution_df["Feature"]
-                                      == feat].index[0]
-                try:
-                    student_vals.append(
-                        float(contribution_df.loc[idx, "Student Value"]))
-                    avg_vals.append(
-                        float(contribution_df.loc[idx, "Avg Value"]))
-                except (ValueError, TypeError):
-                    # Si hay problemas de conversión, usa valores seguros
-                    student_vals.append(0.0)
-                    avg_vals.append(0.0)
-
-            # Close the loop for the chart
-            student_vals += student_vals[:1]
-            avg_vals += avg_vals[:1]
+            avg_vals = radar_data['Average Numeric'].tolist()
+            avg_vals += avg_vals[:1]  # Close the loop
 
             # Create plot
-            fig, ax = plt.subplots(
-                figsize=(10, 8), subplot_kw=dict(polar=True))
+            fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
 
             # Plot student values
             ax.plot(angles, student_vals, 'o-', linewidth=2,
@@ -312,44 +210,34 @@ if hasattr(model, "feature_importances_"):
                     color='#1E88E5', label='Average')
             ax.fill(angles, avg_vals, alpha=0.1, color='#1E88E5')
 
-            # Set categories
+            # Add labels
             ax.set_xticks(angles[:-1])
             ax.set_xticklabels(categories)
 
-            # Add legend and title
+            # Add legend
             ax.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-            plt.title('Student vs. Average Values (Numeric Features)', size=14)
 
             st.pyplot(fig)
         else:
             st.info(
                 "Not enough numeric features to create a radar chart. Need at least 3 numeric features.")
 
-        # Also display comparison table for all features
-        st.markdown(
-            "<h3 class='sub-header'>Detailed Feature Comparison</h3>", unsafe_allow_html=True)
-
-        # Format the dataframe for display
-        display_df = contribution_df[[
-            "Feature", "Student Value", "Avg Value", "Relative Value", "Feature Importance"]]
-
-        # Display styled dataframe
-        st.dataframe(display_df)
-
-        # Add an explanation of what the data means
+        # Explanation
         st.markdown("""
-        ### Understanding the Data
+        ### Understanding the Analysis
         
-        - **Student Value**: The actual value for this student
-        - **Avg Value**: The average value across all students (for numeric features) or the most common value (for categorical features)
-        - **Relative Value**: How much this student's value differs from the norm, standardized
-        - **Feature Importance**: How important this feature is in the depression prediction model
-        - **Estimated Impact**: Calculated impact of this feature on this student's depression risk
+        - **Student Value**: The value for this specific student
+        - **Average Value**: The average across all students (for numeric) or most common value (for categorical)
+        - **Relative Difference**: How different the student's value is from the average (standardized)
+        - **Feature Importance**: How important this feature is in the prediction model
+        - **Impact**: Estimated contribution to this student's depression risk score
         
-        Features with high impact and red coloring indicate risk factors that are higher than average.
-        Features with high impact and green coloring indicate protective factors that are better than average.
+        Features with red bars indicate risk factors, while green bars indicate protective factors.
         """)
 
+    except Exception as e:
+        st.error(f"Error analyzing feature importances: {e}")
+        st.exception(e)
 else:
     st.warning("This model does not support feature importances.")
 
