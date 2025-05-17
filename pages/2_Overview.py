@@ -43,11 +43,12 @@ except Exception as e:
 st.markdown("<h2 class='sub-header'>Upload Student Data</h2>",
             unsafe_allow_html=True)
 st.markdown("""
-Upload a CSV file containing student data. The file should include the following columns:
+Upload a CSV file containing student data with all the required features for depression risk prediction.
 """)
 
-# Display required columns
-st.code(", ".join(feature_columns))
+# Mostrar columnas requeridas en un expander
+with st.expander("View Required Columns"):
+    st.code(", ".join(feature_columns))
 
 uploaded_file = st.file_uploader("Upload student data CSV", type=["csv"])
 
