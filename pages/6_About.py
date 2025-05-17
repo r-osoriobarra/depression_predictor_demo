@@ -53,19 +53,16 @@ st.markdown("""
        margin: 3px;
        font-size: 14px;
    }
-   .team-section {
-       display: flex;
-       flex-wrap: wrap;
-       justify-content: space-between;
-       margin-top: 20px;
-   }
    .team-member {
        background-color: #f0f0f0;
-       padding: 15px;
+       padding: 25px;
        border-radius: 8px;
        margin-bottom: 15px;
-       width: 48%;
        color: #333333;
+       text-align: center;
+   }
+   .team-member h3 {
+       margin-bottom: 15px;
    }
 </style>
 """, unsafe_allow_html=True)
@@ -169,16 +166,16 @@ with col2:
    </div>
    """, unsafe_allow_html=True)
    
-   # Sección de Equipo (opcional)
+   # Sección de Equipo
    st.markdown("<h2 class='sub-header'>Development Team</h2>", unsafe_allow_html=True)
    
-   # Usando cuatro columnas separadas en lugar de un div contenedor
-       st.markdown("""
-       <div class="team-member">
-            <h3>Rodrigo Osorio - Murdoch University Student</h3>
-            <h3>Mia Song - Murdoch University Student</h3>
-       </div>
-       """, unsafe_allow_html=True)
+   st.markdown("""
+   <div class="team-member">
+       <h3>Team members</h3>
+       <h3>Rodrigo Osorio - Murdoch University Student</h3>
+       <h3>Mia Song - Murdoch University Student</h3>
+   </div>
+   """, unsafe_allow_html=True)
    
    # Sección de Contacto
    st.markdown("<h2 class='sub-header'>Contact & Support</h2>", unsafe_allow_html=True)
