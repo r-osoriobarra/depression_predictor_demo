@@ -1,3 +1,4 @@
+# pages/4_Student_Detail.py
 import streamlit as st
 import pandas as pd
 import pickle
@@ -676,5 +677,5 @@ with col2:
         st.switch_page("pages/2_Predict.py")
 
 with col3:
-    if st.button("📋 Generate Report", use_container_width=True):
-        st.info("Report generation feature coming soon!")
+    if st.button("📊 Prediction Analysis", use_container_width=True):
+        st.switch_page("pages/5_Prediction_Analysis.py")
