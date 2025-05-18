@@ -116,16 +116,6 @@ with col2:
        <h3>🔍 Feature Contribution Analysis</h3>
        <p>Advanced interpretation tools that break down which factors contribute most significantly to a student's depression risk, enabling targeted and effective intervention strategies.</p>
    </div>
-   
-   <div class="feature-container">
-       <h3>🛡️ Enterprise-Grade Security</h3>
-       <p>Role-based authentication and secure data handling ensure that sensitive student information is protected and only accessible to authorized personnel with appropriate credentials.</p>
-   </div>
-   
-   <div class="feature-container">
-       <h3>📋 Comprehensive Reporting</h3>
-       <p>Detailed reports and exportable data for administrative review, compliance documentation, and integration with existing student information systems.</p>
-   </div>
    """, unsafe_allow_html=True)
    
    # Scientific methodology section
