@@ -135,81 +135,84 @@ with col2:
    st.markdown("""
    <div class="info-container">
        <p>The Depression Risk Prediction System employs a sophisticated Random Forest machine learning model, trained on a comprehensive dataset of student records with validated depression assessments. Our methodology combines multiple data science techniques to ensure accuracy and reliability.</p>
-       
-       <h4 style="color: #1E88E5; margin-top: 25px; margin-bottom: 15px;">Key Assessment Factors:</h4>
-       <ul style="margin-left: 20px;">
-           <li><strong>Academic Performance:</strong> CGPA, course load, study satisfaction levels</li>
-           <li><strong>Lifestyle Factors:</strong> Sleep patterns, exercise habits, dietary choices</li>
-           <li><strong>Stress Indicators:</strong> Academic pressure, financial stress, work-study balance</li>
-           <li><strong>Social & Environmental:</strong> Social support systems, living situations</li>
-           <li><strong>Health History:</strong> Family mental health history, previous mental health experiences</li>
-           <li><strong>Behavioral Patterns:</strong> Study habits, social engagement, extracurricular participation</li>
-           <li><strong>Psychological Indicators:</strong> Stress coping mechanisms, emotional regulation</li>
-       </ul>
-       
-       <h4 style="color: #1E88E5; margin-top: 25px; margin-bottom: 15px;">Model Validation:</h4>
-       <p>Our prediction model has been rigorously tested and validated using cross-validation techniques, achieving high accuracy rates while maintaining sensitivity to diverse student populations and backgrounds.</p>
-       
-       <p style="margin-top: 20px;"><em>The system uses this comprehensive information to calculate a risk percentage that indicates the likelihood of a student experiencing depression. This serves as a screening tool to identify students who may benefit from further assessment and support.</em></p>
    </div>
    """, unsafe_allow_html=True)
+   
+   st.markdown("#### Key Assessment Factors:")
+   st.markdown("""
+   - **Academic Performance:** CGPA, course load, study satisfaction levels
+   - **Lifestyle Factors:** Sleep patterns, exercise habits, dietary choices  
+   - **Stress Indicators:** Academic pressure, financial stress, work-study balance
+   - **Social & Environmental:** Social support systems, living situations
+   - **Health History:** Family mental health history, previous mental health experiences
+   - **Behavioral Patterns:** Study habits, social engagement, extracurricular participation
+   - **Psychological Indicators:** Stress coping mechanisms, emotional regulation
+   """)
+   
+   st.markdown("#### Model Validation:")
+   st.info("Our prediction model has been rigorously tested and validated using cross-validation techniques, achieving high accuracy rates while maintaining sensitivity to diverse student populations and backgrounds.")
+   
+   st.markdown("*The system uses this comprehensive information to calculate a risk percentage that indicates the likelihood of a student experiencing depression. This serves as a screening tool to identify students who may benefit from further assessment and support.*")
    
    # Sección de Tecnologías
    st.markdown("<h2 class='sub-header'>Technology Stack</h2>", unsafe_allow_html=True)
    
-   st.markdown("""
-   <p class="section-text">Built with modern, industry-standard technologies for optimal performance, scalability, and maintainability:</p>
+   st.markdown("Built with modern, industry-standard technologies for optimal performance, scalability, and maintainability:")
    
-   <h4 style="color: #0D47A1; margin-bottom: 15px;">Core Technologies</h4>
-   <div style="text-align: center; margin: 30px 0;">
-       <span class="tech-badge">Python 3.9+</span>
-       <span class="tech-badge">Streamlit</span>
-       <span class="tech-badge">Scikit-learn</span>
-       <span class="tech-badge">Pandas</span>
-       <span class="tech-badge">NumPy</span>
-   </div>
+   col1_tech, col2_tech, col3_tech = st.columns(3)
    
-   <h4 style="color: #0D47A1; margin-bottom: 15px;">Visualization & UI</h4>
-   <div style="text-align: center; margin: 30px 0;">
-       <span class="tech-badge">Plotly</span>
-       <span class="tech-badge">Matplotlib</span>
-       <span class="tech-badge">Custom CSS</span>
-       <span class="tech-badge">Responsive Design</span>
-   </div>
+   with col1_tech:
+       st.markdown("#### Core Technologies")
+       st.markdown("""
+       <div style="text-align: center; margin: 15px 0;">
+           <span class="tech-badge">Python 3.9+</span><br>
+           <span class="tech-badge">Streamlit</span><br>
+           <span class="tech-badge">Scikit-learn</span><br>
+           <span class="tech-badge">Pandas</span><br>
+           <span class="tech-badge">NumPy</span>
+       </div>
+       """, unsafe_allow_html=True)
    
-   <h4 style="color: #0D47A1; margin-bottom: 15px;">Machine Learning & Analytics</h4>
-   <div style="text-align: center; margin: 30px 0;">
-       <span class="tech-badge">Random Forest</span>
-       <span class="tech-badge">Feature Engineering</span>
-       <span class="tech-badge">Cross-Validation</span>
-       <span class="tech-badge">SHAP Analysis</span>
-   </div>
+   with col2_tech:
+       st.markdown("#### Visualization & UI")
+       st.markdown("""
+       <div style="text-align: center; margin: 15px 0;">
+           <span class="tech-badge">Plotly</span><br>
+           <span class="tech-badge">Matplotlib</span><br>
+           <span class="tech-badge">Custom CSS</span><br>
+           <span class="tech-badge">Responsive Design</span>
+       </div>
+       """, unsafe_allow_html=True)
    
-   <p class="section-text">The machine learning foundation utilizes Random Forest classifiers, chosen for their excellent performance with mixed data types, interpretability, and robustness against overfitting in healthcare applications.</p>
-   """, unsafe_allow_html=True)
+   with col3_tech:
+       st.markdown("#### ML & Analytics")
+       st.markdown("""
+       <div style="text-align: center; margin: 15px 0;">
+           <span class="tech-badge">Random Forest</span><br>
+           <span class="tech-badge">Feature Engineering</span><br>
+           <span class="tech-badge">Cross-Validation</span><br>
+           <span class="tech-badge">SHAP Analysis</span>
+       </div>
+       """, unsafe_allow_html=True)
+   
+   st.info("The machine learning foundation utilizes Random Forest classifiers, chosen for their excellent performance with mixed data types, interpretability, and robustness against overfitting in healthcare applications.")
    
    # Sección de Nota Importante
    st.markdown("<h2 class='sub-header'>Important Usage Guidelines</h2>", unsafe_allow_html=True)
    
+   st.error("**🚨 Critical Disclaimer**\n\nThis system is a screening and assessment tool, not a diagnostic instrument. High risk scores indicate students who may benefit from further evaluation by qualified mental health professionals.")
+   
+   st.markdown("#### 📋 Best Practices for Implementation")
    st.markdown("""
-   <div class="info-container" style="border-color: #F44336;">
-       <h4 style="color: #F44336; margin-top: 0;">🚨 Critical Disclaimer</h4>
-       <p><strong>This system is a screening and assessment tool, not a diagnostic instrument.</strong> High risk scores indicate students who may benefit from further evaluation by qualified mental health professionals.</p>
-       
-       <h4 style="color: #F57C00; margin-top: 20px;">📋 Best Practices for Implementation</h4>
-       <ul style="margin-left: 20px;">
-           <li>Use predictions as one component of a comprehensive mental health strategy</li>
-           <li>Always combine system insights with direct communication and observation</li>
-           <li>Ensure all interventions are conducted by qualified professionals</li>
-           <li>Maintain strict confidentiality and follow institutional privacy protocols</li>
-           <li>Regularly update and validate the model with new data</li>
-           <li>Provide appropriate training for all staff using the system</li>
-       </ul>
-       
-       <h4 style="color: #9C27B0; margin-top: 20px;">🔒 Privacy & Ethics</h4>
-       <p>Student privacy and confidentiality are paramount. All data processing follows established ethical guidelines for educational technology and healthcare applications. Users must adhere to institutional policies and applicable regulations regarding student data protection.</p>
-   </div>
-   """, unsafe_allow_html=True)
+   - Use predictions as one component of a comprehensive mental health strategy
+   - Always combine system insights with direct communication and observation
+   - Ensure all interventions are conducted by qualified professionals
+   - Maintain strict confidentiality and follow institutional privacy protocols
+   - Regularly update and validate the model with new data
+   - Provide appropriate training for all staff using the system
+   """)
+   
+   st.warning("**🔒 Privacy & Ethics**\n\nStudent privacy and confidentiality are paramount. All data processing follows established ethical guidelines for educational technology and healthcare applications. Users must adhere to institutional policies and applicable regulations regarding student data protection.")
    
    # Sección de Equipo
    st.markdown("<h2 class='sub-header'>Development Team</h2>", unsafe_allow_html=True)
@@ -237,19 +240,14 @@ with col2:
        """, unsafe_allow_html=True)
    
    # Acknowledgments
-   st.markdown("<h2 class='sub-header'>Acknowledgments</h2>", unsafe_allow_html=True)
-   
+   st.markdown("#### Acknowledgments")
    st.markdown("""
-   <div class="info-container">
-       <p>We extend our gratitude to:</p>
-       <ul style="margin-left: 20px;">
-           <li><strong>Murdoch University</strong> for providing the educational foundation and research environment</li>
-           <li><strong>Mental Health Professionals</strong> who provided domain expertise and validation</li>
-           <li><strong>Student Affairs Departments</strong> for insights into practical implementation needs</li>
-           <li><strong>Open Source Community</strong> for the excellent tools and libraries that made this project possible</li>
-       </ul>
-   </div>
-   """, unsafe_allow_html=True)
+   We extend our gratitude to:
+   - **Murdoch University** for providing the educational foundation and research environment
+   - **Mental Health Professionals** who provided domain expertise and validation
+   - **Student Affairs Departments** for insights into practical implementation needs
+   - **Open Source Community** for the excellent tools and libraries that made this project possible
+   """)
    
    # Información de versión y actualizaciones
    st.markdown("<h2 class='sub-header'>Version Information</h2>", unsafe_allow_html=True)
@@ -282,23 +280,23 @@ with col2:
    # Sección de Contacto y Soporte
    st.markdown("<h2 class='sub-header'>Contact & Support</h2>", unsafe_allow_html=True)
    
-   st.markdown("""
-   <div class="info-container">
-       <h4 style="color: #1E88E5; margin-top: 0;">📧 Technical Support</h4>
-       <p>For technical issues, feature requests, or system support:</p>
-       <p style="text-align: center; font-weight: bold; margin: 15px 0;">support@depressionrisksystem.edu</p>
+   col1_contact, col2_contact = st.columns(2)
+   
+   with col1_contact:
+       st.markdown("#### 📧 Technical Support")
+       st.markdown("For technical issues, feature requests, or system support:")
+       st.code("support@depressionrisksystem.edu")
        
-       <h4 style="color: #1E88E5; margin-top: 20px;">🏢 Institutional Inquiries</h4>
-       <p>For implementation guidance, training, or institutional partnerships:</p>
-       <p style="text-align: center; font-weight: bold; margin: 15px 0;">partnerships@depressionrisksystem.edu</p>
+       st.markdown("#### 🏢 Institutional Inquiries") 
+       st.markdown("For implementation guidance, training, or institutional partnerships:")
+       st.code("partnerships@depressionrisksystem.edu")
+   
+   with col2_contact:
+       st.markdown("#### 🏛️ Office Location")
+       st.markdown("""
+       University Mental Health Services  
+       Innovation Hub, Building 402  
+       Murdoch University, WA 6150
+       """)
        
-       <h4 style="color: #1E88E5; margin-top: 20px;">🏛️ Office Location</h4>
-       <p style="text-align: center;">University Mental Health Services<br>Innovation Hub, Building 402<br>Murdoch University, WA 6150</p>
-       
-       <div style="background-color: rgba(30, 136, 229, 0.1); padding: 15px; border-radius: 8px; margin-top: 20px;">
-           <p style="margin: 0; text-align: center; font-style: italic;">
-               💬 <strong>Response Time:</strong> Technical support inquiries are typically addressed within 24-48 hours during business days.
-           </p>
-       </div>
-   </div>
-   """, unsafe_allow_html=True)
+       st.info("💬 **Response Time:** Technical support inquiries are typically addressed within 24-48 hours during business days.")
