@@ -37,18 +37,17 @@ except Exception as e:
     st.error(f"Error loading model: {e}")
     st.stop()
 
-# File upload with improved UI
+# File upload with improved UI - now in an expander
 st.markdown("<h2 class='sub-header'>Upload Student Data</h2>",
             unsafe_allow_html=True)
-st.markdown("""
-Upload a CSV file containing student data with all the required features for depression risk prediction.
-""")
 
-# Show required columns in an expander
-with st.expander("View Required Columns"):
-    st.code(", ".join(feature_columns))
-
-uploaded_file = st.file_uploader("Upload student data CSV", type=["csv"])
+# Upload section in an expander
+with st.expander("Upload CSV File"):
+    st.markdown("""
+    Upload a CSV file containing student data with all the required features for depression risk prediction.
+    """)
+    
+    uploaded_file = st.file_uploader("Upload student data CSV", type=["csv"])
 
 # Function to process and display data
 def display_data_visualizations(df):
