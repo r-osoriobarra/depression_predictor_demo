@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import os
 import sys
@@ -11,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Aplicar estilos personalizados
+# Apply custom styles
 st.markdown("""
 <style>
     .main-header {color:#1E88E5; font-size:42px; font-weight:bold; text-align:center; margin-bottom:30px;}
@@ -51,20 +50,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Título principal
+# Main title
 st.markdown("<h1 class='main-header'>Student Depression Risk Prediction System</h1>", unsafe_allow_html=True)
 
-# Texto de bienvenida (centrado)
-st.markdown("<p class='welcome-text'>Welcome to the Student Depression Risk Prediction System, a tool designed to help university wellness coordinators identify students who may be at risk of depression. Early identification allows for timely intervention and support, helping students maintain their mental well-being throughout their academic journey.</p>", unsafe_allow_html=True)
-
-# Pasos para usar la aplicación (título centrado)
-st.markdown("<h2 class='sub-header'>How to Use This System</h2>", unsafe_allow_html=True)
-
-# Crear una columna central para limitar la anchura de los pasos y centrarlos
+# Welcome text (centered and same width as steps)
 col1, col2, col3 = st.columns([1, 10, 1])
 
 with col2:
-    # Paso 1
+    st.markdown("<p class='welcome-text'>Welcome to the Student Depression Risk Prediction System, a tool designed to help university wellness coordinators identify students who may be at risk of depression. Early identification allows for timely intervention and support, helping students maintain their mental well-being throughout their academic journey.</p>", unsafe_allow_html=True)
+
+# Steps for using the application (centered title)
+st.markdown("<h2 class='sub-header'>How to Use This System</h2>", unsafe_allow_html=True)
+
+# Create a central column to limit the width of the steps and center them
+col1, col2, col3 = st.columns([1, 10, 1])
+
+with col2:
+    # Step 1
     st.markdown("""
     <div class="step-container">
         <h3><span class="step-number">1</span> Login</h3>
@@ -72,7 +74,7 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
 
-    # Paso 2
+    # Step 2
     st.markdown("""
     <div class="step-container">
         <h3><span class="step-number">2</span> Upload Student Data</h3>
@@ -80,7 +82,7 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
 
-    # Paso 3
+    # Step 3
     st.markdown("""
     <div class="step-container">
         <h3><span class="step-number">3</span> Explore Student Risk Levels</h3>
@@ -88,7 +90,7 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
 
-    # Paso 4
+    # Step 4
     st.markdown("""
     <div class="step-container">
         <h3><span class="step-number">4</span> Analyze Individual Students</h3>
@@ -96,7 +98,7 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
 
-    # Paso 5
+    # Step 5
     st.markdown("""
     <div class="step-container">
         <h3><span class="step-number">5</span> Understand Contributing Factors</h3>
@@ -104,9 +106,9 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
 
-# Botón de Login que redirige a la página de login - centrado en la página
+# Login button that redirects to the login page - centered on the page
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
     if st.button("Login to Get Started", use_container_width=True, type="primary"):
-        # Redireccionar a la página de login
+        # Redirect to the login page
         st.switch_page("pages/1_Login.py")
