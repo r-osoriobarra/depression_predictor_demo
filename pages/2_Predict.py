@@ -1,435 +1,283 @@
+# pages/3_StudentList.py
 import streamlit as st
 import pandas as pd
-import pickle
+import matplotlib.pyplot as plt
+import seaborn as sns
+from utils import set_page_style, check_login, check_data
 import os
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from utils import set_page_style, check_login
 import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
-st.set_page_config(page_title="Overview", layout="wide")
+st.set_page_config(page_title="Student List", layout="wide")
 set_page_style()
 
-st.markdown("<h1 class='main-header'>Overview Dashboard</h1>",
-            unsafe_allow_html=True)
+st.markdown("<h1 class='main-header'>List of Students and Depression Risk</h1>",
+           unsafe_allow_html=True)
 
-# Check login status
+# Require user login
 if not check_login():
-    st.stop()
+   st.stop()
 
-# Load model, preprocessor and columns
-@st.cache_resource
-def load_model():
-    with open("model/depression_model.pkl", "rb") as f_model:
-        model = pickle.load(f_model)
-    with open("model/preprocessor.pkl", "rb") as f_pre:
-        preprocessor = pickle.load(f_pre)
-    with open("model/feature_columns.pkl", "rb") as f_cols:
-        feature_columns = pickle.load(f_cols)
-    return model, preprocessor, feature_columns
+# Ensure data has been loaded
+if not check_data():
+   st.stop()
 
-try:
-    model, preprocessor, feature_columns = load_model()
-except Exception as e:
-    st.error(f"Error loading model: {e}")
-    st.stop()
+# Use the existing DataFrame stored in session_state
+df = st.session_state["latest_df"]
 
-# File upload with improved UI
-st.markdown("<h2 class='sub-header'>Upload Student Data</h2>",
-            unsafe_allow_html=True)
-st.markdown("""
-Upload a CSV file containing student data with all the required features for depression risk prediction.
-""")
+# Create risk category if it doesn't exist
+if "Risk Category" not in df.columns:
+   df["Risk Category"] = pd.cut(
+       df["Depression Risk (%)"],
+       bins=[0, 30, 70, 100],
+       labels=["Low", "Medium", "High"]
+   )
 
-# Show required columns in an expander
-with st.expander("View Required Columns"):
-    st.code(", ".join(feature_columns))
+# Create filtering options in sidebar
+st.sidebar.markdown(
+   "<h3 class='sub-header'>Filter Students</h3>", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("Upload student data CSV", type=["csv"])
+# Risk filter
+risk_filter = st.sidebar.multiselect(
+   "Risk Category",
+   options=["High", "Medium", "Low"],
+   default=["High", "Medium", "Low"]
+)
 
-# Function to process and display data
-def display_data_visualizations(df):
-    # Calculate metrics
-    high_risk_count = (df["Risk Category"] == "High").sum()
-    high_risk_percent = high_risk_count / len(df) * 100
-    avg_risk = df["Depression Risk (%)"].mean()
-    
-    # Determine color for high risk percentage based on new rules
-    if high_risk_percent > 70:
-        percentage_color = "#D32F2F"  # Red for high
-    elif high_risk_percent >= 30:
-        percentage_color = "#F57C00"  # Orange for medium
-    else:
-        percentage_color = "#388E3C"  # Green for low
-
-    # Determine color for average risk
-    if avg_risk > 70:
-        avg_risk_color = "#D32F2F"  # Red for high
-    elif avg_risk >= 30:
-        avg_risk_color = "#F57C00"  # Orange for medium
-    else:
-        avg_risk_color = "#388E3C"  # Green for low
-
-    # Custom container with white border and no background
-    st.markdown("""
-    <style>
-    .metrics-container {
-        border: 2px solid white;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        background-color: transparent;
-    }
-    .custom-metric {
-        text-align: center;
-        color: white;
-    }
-    .metric-value {
-        font-size: 2rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-    }
-    .metric-label {
-        font-size: 1.2rem;
-        color: #CCCCCC;
-    }
-    .stButton>button {
-        background-color: #1E88E5 !important;
-        color: white !important;
-        font-size: 18px !important;
-        padding: 12px 24px !important;
-        border-radius: 8px !important;
-        border: none !important;
-        cursor: pointer !important;
-        transition: all 0.3s ease !important;
-    }
-    .stButton>button:hover {
-        background-color: #0D47A1 !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2) !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Display key metrics in cards with custom container
-    st.markdown("<h2 class='sub-header'>Key Metrics</h2>",
-                unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown(f"""
-        <div class="metrics-container">
-            <div class="custom-metric">
-                <div class="metric-value" style="color: white;">{len(df)}</div>
-                <div class="metric-label">Number of Students</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"""
-        <div class="metrics-container">
-            <div class="custom-metric">
-                <div class="metric-value" style="color: {avg_risk_color};">{round(avg_risk, 1)}%</div>
-                <div class="metric-label">Average Risk</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown(f"""
-        <div class="metrics-container">
-            <div class="custom-metric">
-                <div class="metric-value" style="color: white;">{high_risk_count}</div>
-                <div class="metric-label">Number of High Risk Students <span style="color: {percentage_color};">({high_risk_percent:.1f}%)</span></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Interactive visualizations in tabs
-    st.markdown("<h2 class='sub-header'>Data Visualizations</h2>",
-                unsafe_allow_html=True)
-    tab1, tab2, tab3, tab4 = st.tabs(
-        ["Risk Distribution", "Demographics", "Academic Factors", "Mental Health & Lifestyle"])
-
-    with tab1:
-        # Risk distribution visualization
-        col1, col2 = st.columns(2)
-
-        with col1:
-            # Interactive histogram of risk scores
-            fig_hist = px.histogram(
-                df, 
-                x="Depression Risk (%)",
-                nbins=20,
-                title='Distribution of Depression Risk Scores'
-            )
-            fig_hist.add_vline(x=30, line_dash="dash", line_color="#F57C00", 
-                              annotation_text="Low/Medium threshold")
-            fig_hist.add_vline(x=60, line_dash="dash", line_color="#D32F2F", 
-                              annotation_text="Medium/High threshold")
-            fig_hist.update_layout(
-                xaxis_title="Risk Score (%)",
-                yaxis_title="Number of Students",
-                template="plotly_white"
-            )
-            st.plotly_chart(fig_hist, use_container_width=True)
-
-        with col2:
-            # Interactive pie chart of risk categories with correct color mapping
-            risk_counts = df['Risk Category'].value_counts()
-            
-            # Create color mapping based on category names
-            color_map = {'Low': '#388E3C', 'Medium': '#F57C00', 'High': '#D32F2F'}
-            colors = [color_map[category] for category in risk_counts.index]
-            
-            fig_pie = px.pie(
-                values=risk_counts.values,
-                names=risk_counts.index,
-                title='Distribution of Risk Categories',
-                color=risk_counts.index,
-                color_discrete_map=color_map
-            )
-            fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-            st.plotly_chart(fig_pie, use_container_width=True)
-
-    with tab2:
-        # Demographics analysis
-        if 'Gender' in df.columns:
-            col1, col2 = st.columns(2)
-
-            with col1:
-                # Interactive box plot for risk by gender
-                fig_box = px.box(
-                    df, 
-                    x='Gender', 
-                    y='Depression Risk (%)',
-                    title='Depression Risk by Gender'
-                )
-                fig_box.update_layout(template="plotly_white")
-                st.plotly_chart(fig_box, use_container_width=True)
-
-            with col2:
-                # Interactive scatter plot for risk by age (if available)
-                if 'Age' in df.columns:
-                    fig_scatter = px.scatter(
-                        df, 
-                        x='Age', 
-                        y='Depression Risk (%)', 
-                        color='Risk Category',
-                        color_discrete_map={
-                            'Low': '#388E3C',
-                            'Medium': '#F57C00',
-                            'High': '#D32F2F'
-                        },
-                        title='Depression Risk by Age'
-                    )
-                    fig_scatter.update_layout(template="plotly_white")
-                    st.plotly_chart(fig_scatter, use_container_width=True)
-                else:
-                    st.info("Age data not available for visualization.")
-        else:
-            st.info("Demographic data not available for visualization.")
-
-    with tab3:
-        # Academic factors analysis
-        if 'CGPA' in df.columns:
-            col1, col2 = st.columns(2)
-
-            with col1:
-                # Interactive scatter plot for risk by CGPA
-                fig_cgpa = px.scatter(
-                    df, 
-                    x='CGPA', 
-                    y='Depression Risk (%)', 
-                    color='Risk Category',
-                    color_discrete_map={
-                        'Low': '#388E3C',
-                        'Medium': '#F57C00',
-                        'High': '#D32F2F'
-                    },
-                    title='Depression Risk by CGPA'
-                )
-                fig_cgpa.update_layout(template="plotly_white")
-                st.plotly_chart(fig_cgpa, use_container_width=True)
-
-            with col2:
-                # Interactive bar chart for risk by degree (if available)
-                if 'Degree' in df.columns:
-                    degree_risk = df.groupby('Degree')['Depression Risk (%)'].mean().sort_values(ascending=False)
-                    
-                    fig_degree = px.bar(
-                        x=degree_risk.index,
-                        y=degree_risk.values,
-                        title='Average Depression Risk by Degree Program',
-                        labels={'x': 'Degree', 'y': 'Average Risk (%)'}
-                    )
-                    fig_degree.update_layout(
-                        template="plotly_white",
-                        showlegend=False
-                    )
-                    st.plotly_chart(fig_degree, use_container_width=True)
-                else:
-                    st.info("Degree data not available for visualization.")
-        else:
-            st.info("Academic data not available for visualization.")
-
-    with tab4:
-        # Mental Health & Lifestyle Factors
-        col1, col2 = st.columns(2)
-
-        with col1:
-            # Sleep duration distribution - Pie chart
-            if 'Sleep Duration' in df.columns:
-                sleep_counts = df['Sleep Duration'].value_counts()
-                
-                fig_sleep = px.pie(
-                    values=sleep_counts.values,
-                    names=sleep_counts.index,
-                    title='Sleep Duration Distribution',
-                    color_discrete_sequence=px.colors.qualitative.Set3
-                )
-                fig_sleep.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig_sleep, use_container_width=True)
-            else:
-                st.info("Sleep Duration data not available for visualization.")
-
-            # Dietary habits vs risk level - Stacked bar
-            if 'Dietary Habits' in df.columns:
-                # Create cross-tabulation for stacked bar
-                dietary_risk = pd.crosstab(df['Dietary Habits'], df['Risk Category'])
-                
-                fig_dietary = px.bar(
-                    dietary_risk,
-                    title='Dietary Habits vs Risk Level',
-                    color_discrete_map={
-                        'Low': '#388E3C',
-                        'Medium': '#F57C00',
-                        'High': '#D32F2F'
-                    },
-                    barmode='stack'
-                )
-                fig_dietary.update_layout(
-                    xaxis_title="Dietary Habits",
-                    yaxis_title="Number of Students",
-                    template="plotly_white"
-                )
-                st.plotly_chart(fig_dietary, use_container_width=True)
-            else:
-                st.info("Dietary Habits data not available for visualization.")
-
-        with col2:
-            # Financial stress impact visualization
-            if 'Financial Stress' in df.columns:
-                # Group by financial stress and calculate average risk
-                financial_impact = df.groupby('Financial Stress')['Depression Risk (%)'].mean().reset_index()
-                
-                fig_financial = px.bar(
-                    financial_impact,
-                    x='Financial Stress',
-                    y='Depression Risk (%)',
-                    title='Financial Stress Impact on Depression Risk',
-                    color='Depression Risk (%)',
-                    color_continuous_scale=['#388E3C', '#F57C00', '#D32F2F']
-                )
-                fig_financial.update_layout(
-                    template="plotly_white",
-                    showlegend=False
-                )
-                st.plotly_chart(fig_financial, use_container_width=True)
-            else:
-                st.info("Financial Stress data not available for visualization.")
-
-            # Gauge chart for suicidal thoughts percentage
-            if 'Have you ever had suicidal thoughts ?' in df.columns:
-                # Calculate percentage of students with suicidal thoughts
-                suicidal_thoughts = df['Have you ever had suicidal thoughts ?'].value_counts()
-                if 'Yes' in suicidal_thoughts.index:
-                    suicidal_percent = (suicidal_thoughts.get('Yes', 0) / len(df)) * 100
-                else:
-                    suicidal_percent = 0
-                
-                # Create gauge chart
-                fig_gauge = go.Figure(go.Indicator(
-                    mode = "gauge+number+delta",
-                    value = suicidal_percent,
-                    domain = {'x': [0, 1], 'y': [0, 1]},
-                    title = {'text': "Students with Suicidal Thoughts (%)"},
-                    delta = {'reference': 10},
-                    gauge = {
-                        'axis': {'range': [None, 100]},
-                        'bar': {'color': "darkblue"},
-                        'steps': [
-                            {'range': [0, 25], 'color': "#388E3C"},
-                            {'range': [25, 50], 'color': "#F57C00"},
-                            {'range': [50, 100], 'color': "#D32F2F"}
-                        ],
-                        'threshold': {
-                            'line': {'color': "red", 'width': 4},
-                            'thickness': 0.75,
-                            'value': 90
-                        }
-                    }
-                ))
-                fig_gauge.update_layout(height=400)
-                st.plotly_chart(fig_gauge, use_container_width=True)
-            else:
-                st.info("Suicidal thoughts data not available for visualization.")
-
-    # Button to view student list - centered on the page
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("View Student List", use_container_width=True):
-            st.switch_page("pages/3_Student_List.py")
-
-# Main logic
-if uploaded_file is not None:
-    try:
-        df = pd.read_csv(uploaded_file)
-
-        # Check if all required columns are present
-        missing_cols = [
-            col for col in feature_columns if col not in df.columns]
-        if missing_cols:
-            st.error(f"Missing required columns: {', '.join(missing_cols)}")
-            st.stop()
-
-        # Apply model to predict depression risk
-        X = df[feature_columns]
-        X_transformed = preprocessor.transform(X)
-        df["Depression Risk (%)"] = model.predict_proba(
-            X_transformed)[:, 1] * 100
-
-        # Create risk categories
-        df['Risk Category'] = pd.cut(
-            df["Depression Risk (%)"],
-            bins=[0, 30, 60, 100],
-            labels=["Low", "Medium", "High"]
-        )
-
-        # Store in session_state for later use
-        st.session_state["latest_df"] = df
-
-        # Show success message
-        st.success(
-            f"Data loaded successfully. {len(df)} student records processed.")
-
-        # Display visualizations
-        display_data_visualizations(df)
-
-    except Exception as e:
-        st.error(f"Error processing data: {e}")
-        st.exception(e)
-
-elif "latest_df" in st.session_state:
-    df = st.session_state["latest_df"]
-    st.info("Displaying previously uploaded data. To update, upload a new file.")
-    
-    # Display visualizations
-    display_data_visualizations(df)
+# Gender filter (if available)
+if "Gender" in df.columns:
+   gender_filter = st.sidebar.multiselect(
+       "Gender",
+       options=df["Gender"].unique(),
+       default=df["Gender"].unique()
+   )
 else:
-    st.warning("Please upload a CSV file to view the dashboard.")
+   gender_filter = None
+
+# Degree filter (if available)
+if "Degree" in df.columns:
+   degree_filter = st.sidebar.multiselect(
+       "Degree",
+       options=df["Degree"].unique(),
+       default=[]
+   )
+else:
+   degree_filter = None
+
+# CGPA range filter (if available)
+if "CGPA" in df.columns:
+   cgpa_range = st.sidebar.slider(
+       "CGPA Range",
+       min_value=float(df["CGPA"].min()),
+       max_value=float(df["CGPA"].max()),
+       value=(float(df["CGPA"].min()), float(df["CGPA"].max()))
+   )
+else:
+   cgpa_range = None
+
+# Apply filters
+filtered_df = df.copy()
+
+# Filter by risk category
+filtered_df = filtered_df[filtered_df["Risk Category"].isin(risk_filter)]
+
+# Filter by gender if selected
+if gender_filter is not None and len(gender_filter) > 0:
+   filtered_df = filtered_df[filtered_df["Gender"].isin(gender_filter)]
+
+# Filter by degree if selected
+if degree_filter is not None and len(degree_filter) > 0:
+   filtered_df = filtered_df[filtered_df["Degree"].isin(degree_filter)]
+
+# Filter by CGPA range if selected
+if cgpa_range is not None:
+   filtered_df = filtered_df[(filtered_df["CGPA"] >= cgpa_range[0]) &
+                             (filtered_df["CGPA"] <= cgpa_range[1])]
+
+# Show filter summary
+st.markdown(
+   f"Showing **{len(filtered_df)}** students out of **{len(df)}** total students.")
+
+# Initialize selected student index in session state
+if "selected_student_for_preview" not in st.session_state:
+   if len(filtered_df) > 0:
+       st.session_state["selected_student_for_preview"] = filtered_df.index[0]
+   else:
+       st.session_state["selected_student_for_preview"] = None
+
+# Create a table with the specified columns
+st.markdown("<h2 class='sub-header'>Student List</h2>", unsafe_allow_html=True)
+
+# Add custom CSS for clickable rows and button styling
+st.markdown("""
+<style>
+.clickable-row {
+   cursor: pointer;
+}
+.student-preview-container {
+   border: 2px solid white;
+   border-radius: 10px;
+   padding: 20px;
+   margin-bottom: 20px;
+   background-color: transparent;
+}
+.stButton > button {
+   background-color: #1E88E5 !important;
+   color: white !important;
+   border-radius: 5px !important;
+   border: none !important;
+   padding: 5px 10px !important;
+   font-size: 12px !important;
+}
+.stButton > button:hover {
+   background-color: #0D47A1 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Create display columns
+if 'id' in filtered_df.columns:
+   student_id_col = 'id'
+elif 'ID' in filtered_df.columns:
+   student_id_col = 'ID'
+else:
+   student_id_col = None
+
+display_cols = []
+if student_id_col:
+   display_cols.append(student_id_col)
+display_cols.extend(["Age", "Degree", "Depression Risk (%)", "Risk Category"])
+
+# Filter to only available columns
+available_cols = [col for col in display_cols if col in filtered_df.columns]
+
+if len(available_cols) > 0:
+   # Create the display dataframe
+   display_df = filtered_df[available_cols].copy()
+   display_df = display_df.sort_values("Depression Risk (%)", ascending=False)
+   
+   # Rename student ID column for display
+   if student_id_col in display_df.columns:
+       display_df = display_df.rename(columns={student_id_col: "Student ID"})
+   
+   # Add action button column
+   display_df["Actions"] = "View Details"
+   
+   # Function to highlight risk categories with updated thresholds
+   def highlight_risk(val):
+       if val == "High":
+           return 'background-color: rgba(211, 47, 47, 0.2); color: #D32F2F; font-weight: bold'
+       elif val == "Medium":
+           return 'background-color: rgba(245, 124, 0, 0.2); color: #F57C00; font-weight: bold'
+       elif val == "Low":
+           return 'background-color: rgba(56, 142, 60, 0.2); color: #388E3C; font-weight: bold'
+       return ''
+   
+   # Apply styling only to Risk Category column
+   styled_df = display_df.style.applymap(highlight_risk, subset=["Risk Category"])
+   
+   # Display the table
+   selected_indices = st.dataframe(
+       styled_df,
+       height=400,
+       use_container_width=True,
+       on_select="rerun",
+       selection_mode="single-row"
+   )
+   
+   # Handle row selection for preview
+   if selected_indices["selection"]["rows"]:
+       selected_row_idx = selected_indices["selection"]["rows"][0]
+       # Get the actual dataframe index
+       actual_index = display_df.iloc[selected_row_idx].name
+       st.session_state["selected_student_for_preview"] = actual_index
+   
+   # Create action buttons for each student
+   st.markdown("### Quick Actions")
+   cols = st.columns(min(5, len(display_df)))
+   
+   for idx, (_, row) in enumerate(display_df.iterrows()):
+       col_idx = idx % 5
+       with cols[col_idx]:
+           if st.button(f"View {row.name}", key=f"detail_btn_{row.name}"):
+               st.session_state["selected_student_index"] = row.name
+               st.switch_page("pages/4_Student_Detail.py")
+   
+   # Student Preview section
+   if st.session_state["selected_student_for_preview"] is not None and st.session_state["selected_student_for_preview"] in filtered_df.index:
+       selected_student = filtered_df.loc[st.session_state["selected_student_for_preview"]]
+       
+       st.markdown("<h3 class='sub-header'>Student Preview</h3>",
+                   unsafe_allow_html=True)
+       
+       # Format based on risk level
+       risk_score = selected_student["Depression Risk (%)"]
+       if risk_score > 70:
+           risk_color = "#D32F2F"
+           risk_category = "High"
+       elif risk_score > 30:
+           risk_color = "#F57C00"
+           risk_category = "Medium"
+       else:
+           risk_color = "#388E3C"
+           risk_category = "Low"
+       
+       # Get student ID for display
+       if student_id_col and student_id_col in selected_student.index:
+           student_display_id = selected_student[student_id_col]
+       else:
+           student_display_id = st.session_state["selected_student_for_preview"]
+       
+       st.markdown(f"""
+           <div class="student-preview-container">
+               <div style="display: flex; justify-content: space-between; align-items: center;">
+                   <div>
+                       <h3 style="margin: 0; color: white;">Student {student_display_id}</h3>
+                       <p style="margin: 5px 0 0 0; color: #CCCCCC;">{selected_student.get("Degree", "Student")}</p>
+                   </div>
+                   <div style="text-align: right;">
+                       <h3 style="margin: 0; color: {risk_color};">{risk_category} Risk</h3>
+                       <p style="font-size: 24px; font-weight: bold; margin: 0; color: {risk_color};">{round(risk_score, 1)}%</p>
+                   </div>
+               </div>
+           </div>
+       """, unsafe_allow_html=True)
+       
+       # Display key student attributes in two columns
+       col1, col2 = st.columns(2)
+       
+       # Basic attributes
+       basic_attrs = ["Gender", "Age", "CGPA", "Degree"]
+       basic_attrs = [
+           attr for attr in basic_attrs if attr in selected_student.index]
+       
+       with col1:
+           st.markdown("<h4>Basic Information</h4>", unsafe_allow_html=True)
+           for attr in basic_attrs:
+               st.markdown(f"**{attr}:** {selected_student[attr]}")
+       
+       # Mental health indicators if available
+       mh_attrs = ["Academic Pressure", "Study Satisfaction", "Sleep Duration",
+                   "Financial Stress", "Family History of Mental Illness"]
+       mh_attrs = [attr for attr in mh_attrs if attr in selected_student.index]
+       
+       with col2:
+           if mh_attrs:
+               st.markdown("<h4>Mental Health Indicators</h4>",
+                           unsafe_allow_html=True)
+               for attr in mh_attrs:
+                   st.markdown(f"**{attr}:** {selected_student[attr]}")
+           else:
+               st.info(
+                   "No detailed mental health indicators available for this student.")
+       
+       # Button to view full details
+       col1, col2, col3 = st.columns([1, 1, 1])
+       with col2:
+           if st.button("View Full Student Details", use_container_width=True, type="primary"):
+               st.session_state["selected_student_index"] = st.session_state["selected_student_for_preview"]
+               st.switch_page("pages/4_Student_Detail.py")
+   
+else:
+   st.warning("No students found with the selected filters or required columns are missing.")
