@@ -126,23 +126,20 @@ st.markdown("""
     <div class="explanation-container">
         <h3 style="margin-top: 0; color: white; text-align: center; font-size: 1.8rem;">Understanding Feature Contributions</h3>
         <p style="color: #CCCCCC; text-align: center; margin-bottom: 25px;">How different factors influence this student's depression risk prediction</p>
-        
-        <div style="color: white;">
-            <p style="margin-bottom: 12px;">This analysis shows how much each factor contributes to this student's depression risk prediction, based on:</p>
-            <ul style="margin-bottom: 12px;">
-                <li style="margin-bottom: 8px;">📊 <strong>Feature Importance:</strong> How significant each factor is in the prediction model</li>
-                <li style="margin-bottom: 8px;">👤 <strong>Student's Values:</strong> This student's specific characteristics compared to population averages</li>
-                <li style="margin-bottom: 8px;">🔍 <strong>Effect Direction:</strong> Whether each factor increases or decreases the predicted risk</li>
-            </ul>
-            <div style="background-color: rgba(30, 136, 229, 0.1); padding: 15px; border-radius: 8px; margin-top: 15px;">
-                <p style="margin: 0; font-style: italic;">
-                    💡 <strong>Interpretation Guide:</strong> Larger percentages indicate stronger influence on the prediction. 
-                    Red factors increase risk, while green factors help reduce it.
-                </p>
-            </div>
-        </div>
     </div>
 """, unsafe_allow_html=True)
+
+with st.container():
+    st.markdown("""
+    This analysis shows how much each factor contributes to this student's depression risk prediction, based on:
+    
+    - **📊 Feature Importance:** How significant each factor is in the prediction model
+    - **👤 Student's Values:** This student's specific characteristics compared to population averages  
+    - **🔍 Effect Direction:** Whether each factor increases or decreases the predicted risk
+    
+    💡 **Interpretation Guide:** Larger percentages indicate stronger influence on the prediction. 
+    Red factors increase risk, while green factors help reduce it.
+    """)
 
 # Check if model supports feature importance analysis
 if hasattr(model, "feature_importances_"):
@@ -373,39 +370,28 @@ if hasattr(model, "feature_importances_"):
     st.markdown("""
         <div class="explanation-container">
             <h3 style="margin-top: 0; color: white; text-align: center; font-size: 1.8rem;">How to Interpret These Results</h3>
-            
-            <div style="color: white;">
-                <div style="margin-bottom: 20px;">
-                    <h4 style="color: #1E88E5; margin-bottom: 10px;">📊 Understanding Contributions</h4>
-                    <p style="margin-bottom: 10px;">
-                        The percentages show how much each factor influences this student's overall depression risk prediction. 
-                        Features with higher percentages have a stronger impact on the final risk score.
-                    </p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <h4 style="color: #1E88E5; margin-bottom: 10px;">🔍 Effect Interpretation</h4>
-                    <ul style="margin-bottom: 10px;">
-                        <li style="margin-bottom: 8px;"><span style="color: #D32F2F;">⚠️ Increases Risk:</span> 
-                            This factor is pushing the student's risk prediction higher</li>
-                        <li style="margin-bottom: 8px;"><span style="color: #388E3C;">✅ Decreases Risk:</span> 
-                            This factor is helping to reduce the student's predicted risk</li>
-                        <li style="margin-bottom: 8px;"><span style="color: #9E9E9E;">❓ Unknown Effect:</span> 
-                            The impact direction is unclear from the available data</li>
-                    </ul>
-                </div>
-                
-                <div style="background-color: rgba(245, 124, 0, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #F57C00;">
-                    <h4 style="color: #F57C00; margin-top: 0; margin-bottom: 10px;">⚠️ Important Disclaimer</h4>
-                    <p style="margin: 0; font-style: italic;">
-                        This analysis shows correlations and patterns identified by the machine learning model. 
-                        It should be used alongside professional judgment and clinical assessment, not as a replacement for them. 
-                        Individual circumstances and context are crucial for proper interpretation.
-                    </p>
-                </div>
-            </div>
         </div>
     """, unsafe_allow_html=True)
+    
+    with st.container():
+        st.markdown("""
+        ### 📊 Understanding Contributions
+        The percentages show how much each factor influences this student's overall depression risk prediction. 
+        Features with higher percentages have a stronger impact on the final risk score.
+        
+        ### 🔍 Effect Interpretation
+        - **⚠️ Increases Risk:** This factor is pushing the student's risk prediction higher
+        - **✅ Decreases Risk:** This factor is helping to reduce the student's predicted risk  
+        - **❓ Unknown Effect:** The impact direction is unclear from the available data
+        """)
+        
+        st.warning("""
+        **⚠️ Important Disclaimer**
+        
+        This analysis shows correlations and patterns identified by the machine learning model. 
+        It should be used alongside professional judgment and clinical assessment, not as a replacement for them. 
+        Individual circumstances and context are crucial for proper interpretation.
+        """)
     
 else:
     st.warning("This model does not support feature importance analysis.")
