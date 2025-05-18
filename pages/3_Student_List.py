@@ -97,6 +97,9 @@ if cgpa_range is not None:
 st.markdown(
    f"Showing **{len(filtered_df)}** students out of **{len(df)}** total students.")
 
+# Instructions for users - MOVED HERE
+st.info("💡 **How to use:** Check the checkbox of a row to preview the student details below. Click 'View Full Details' to go to the detailed analysis page.")
+
 # Create a table with the specified columns
 st.markdown("<h2 class='sub-header'>Student List</h2>", unsafe_allow_html=True)
 
@@ -110,10 +113,10 @@ st.markdown("""
    margin-bottom: 20px;
    background-color: transparent;
 }
-.info-container {
+.unified-info-container {
    border: 2px solid white;
    border-radius: 10px;
-   padding: 15px;
+   padding: 20px;
    margin-bottom: 15px;
    background-color: transparent;
 }
@@ -169,17 +172,23 @@ if len(available_cols) > 0:
    # Apply styling to Risk Category column
    styled_df = display_df.style.applymap(highlight_risk, subset=["Risk Category"])
    
-   # Display the table with single checkbox selection
+   # Display the table with single checkbox selection and custom column config
+   column_config = {
+       "Student ID": st.column_config.TextColumn("Student ID"),
+       "Age": st.column_config.NumberColumn("Age"),
+       "Degree": st.column_config.TextColumn("Degree"),
+       "Depression Risk (%)": st.column_config.NumberColumn("Depression Risk (%)", format="%.1f"),
+       "Risk Category": st.column_config.TextColumn("Risk Category")
+   }
+   
    selected_rows = st.dataframe(
        styled_df,
        height=400,
        use_container_width=True,
        on_select="rerun",
-       selection_mode="single-row"
+       selection_mode="single-row",
+       column_config=column_config
    )
-   
-   # Instructions for users
-   st.info("💡 **How to use:** Check the checkbox of a row to preview the student details below. Click 'View Full Details' to go to the detailed analysis page.")
    
    # Handle row selection for preview
    selected_student = None
@@ -214,6 +223,7 @@ if len(available_cols) > 0:
        else:
            student_display_id = selected_student.name
        
+       # Header with risk info
        st.markdown(f"""
            <div class="student-preview-container">
                <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -229,46 +239,41 @@ if len(available_cols) > 0:
            </div>
        """, unsafe_allow_html=True)
        
-       # Display key student attributes in two columns with containers
-       col1, col2 = st.columns(2)
-       
+       # All information in a single container with subsection titles
        # Basic attributes
        basic_attrs = ["Gender", "Age", "CGPA", "Degree"]
        basic_attrs = [
            attr for attr in basic_attrs if attr in selected_student.index]
-       
-       with col1:
-           # Create content for Basic Information container
-           basic_info_content = "<h4 style='margin-top: 0; color: white;'>Basic Information</h4>"
-           for attr in basic_attrs:
-               basic_info_content += f"<p style='margin: 5px 0; color: white;'><strong>{attr}:</strong> {selected_student[attr]}</p>"
-           
-           st.markdown(f"""
-               <div class="info-container">
-                   {basic_info_content}
-               </div>
-           """, unsafe_allow_html=True)
        
        # Mental health indicators if available
        mh_attrs = ["Academic Pressure", "Study Satisfaction", "Sleep Duration",
                    "Financial Stress", "Family History of Mental Illness"]
        mh_attrs = [attr for attr in mh_attrs if attr in selected_student.index]
        
-       with col2:
-           # Create content for Mental Health Indicators container
-           mh_info_content = "<h4 style='margin-top: 0; color: white;'>Mental Health Indicators</h4>"
-           
-           if mh_attrs:
-               for attr in mh_attrs:
-                   mh_info_content += f"<p style='margin: 5px 0; color: white;'><strong>{attr}:</strong> {selected_student[attr]}</p>"
-           else:
-               mh_info_content += "<p style='color: #CCCCCC; font-style: italic;'>No detailed mental health indicators available for this student.</p>"
-           
-           st.markdown(f"""
-               <div class="info-container">
-                   {mh_info_content}
-               </div>
-           """, unsafe_allow_html=True)
+       # Create unified container content
+       unified_content = ""
+       
+       # Basic Information section
+       if basic_attrs:
+           unified_content += "<h4 style='margin-top: 0; margin-bottom: 15px; color: white; border-bottom: 1px solid #444; padding-bottom: 5px;'>Basic Information</h4>"
+           for attr in basic_attrs:
+               unified_content += f"<p style='margin: 8px 0; color: white;'><strong>{attr}:</strong> {selected_student[attr]}</p>"
+           unified_content += "<br>"
+       
+       # Mental Health Indicators section
+       unified_content += "<h4 style='margin-top: 0; margin-bottom: 15px; color: white; border-bottom: 1px solid #444; padding-bottom: 5px;'>Mental Health Indicators</h4>"
+       if mh_attrs:
+           for attr in mh_attrs:
+               unified_content += f"<p style='margin: 8px 0; color: white;'><strong>{attr}:</strong> {selected_student[attr]}</p>"
+       else:
+           unified_content += "<p style='color: #CCCCCC; font-style: italic; margin: 8px 0;'>No detailed mental health indicators available for this student.</p>"
+       
+       # Display the unified container
+       st.markdown(f"""
+           <div class="unified-info-container">
+               {unified_content}
+           </div>
+       """, unsafe_allow_html=True)
        
        # Button to view full details - save the student index for the detail page
        col1, col2, col3 = st.columns([1, 1, 1])
