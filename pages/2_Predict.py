@@ -288,12 +288,39 @@ if uploaded_file is not None:
                    )
                    fig_cgpa.update_layout(template="plotly_white")
                    st.plotly_chart(fig_cgpa, use_container_width=True)
+
+                   # CGPA vs Hours of Study scatter plot
+                   if 'Work/Study Hours' in df.columns:
+                       fig_cgpa_hours = px.scatter(
+                           df,
+                           x='CGPA',
+                           y='Work/Study Hours',
+                           color='Risk Category',
+                           color_discrete_map={
+                               'Low': '#388E3C',
+                               'Medium': '#F57C00',
+                               'High': '#D32F2F'
+                           },
+                           title='CGPA vs Study Hours by Risk Level'
+                       )
+                       fig_cgpa_hours.update_layout(template="plotly_white")
+                       st.plotly_chart(fig_cgpa_hours, use_container_width=True)
                else:
                    st.info("CGPA data not available for visualization.")
 
            with col2:
-               # Interactive bar chart for risk by degree (if available)
+               # Box plot for risk distribution by degree level
                if 'Degree' in df.columns:
+                   fig_degree_box = px.box(
+                       df,
+                       x='Degree',
+                       y='Depression Risk (%)',
+                       title='Risk Distribution by Degree Level'
+                   )
+                   fig_degree_box.update_layout(template="plotly_white")
+                   st.plotly_chart(fig_degree_box, use_container_width=True)
+
+                   # Interactive bar chart for average risk by degree
                    degree_risk = df.groupby('Degree')['Depression Risk (%)'].mean().sort_values(ascending=False)
                    
                    fig_degree = px.bar(
@@ -310,50 +337,12 @@ if uploaded_file is not None:
                else:
                    st.info("Degree data not available for visualization.")
 
-           # Additional Academic Factors
-           col3, col4 = st.columns(2)
-
-           with col3:
-               # Scatter plot: CGPA vs Hours of Study colored by risk
-               if 'CGPA' in df.columns and 'Work/Study Hours' in df.columns:
-                   fig_cgpa_hours = px.scatter(
-                       df,
-                       x='CGPA',
-                       y='Work/Study Hours',
-                       color='Risk Category',
-                       color_discrete_map={
-                           'Low': '#388E3C',
-                           'Medium': '#F57C00',
-                           'High': '#D32F2F'
-                       },
-                       title='CGPA vs Study Hours by Risk Level'
-                   )
-                   fig_cgpa_hours.update_layout(template="plotly_white")
-                   st.plotly_chart(fig_cgpa_hours, use_container_width=True)
-               else:
-                   st.info("CGPA or Work/Study Hours data not available.")
-
-           with col4:
-               # Box plot: Risk distribution by degree level
-               if 'Degree' in df.columns:
-                   fig_degree_box = px.box(
-                       df,
-                       x='Degree',
-                       y='Depression Risk (%)',
-                       title='Risk Distribution by Degree Level'
-                   )
-                   fig_degree_box.update_layout(template="plotly_white")
-                   fig_degree_box.update_xaxis(tickangle=45)
-                   st.plotly_chart(fig_degree_box, use_container_width=True)
-               else:
-                   st.info("Degree data not available for visualization.")
-
        with tab4:
            # Mental Health & Lifestyle Factors
            col1, col2 = st.columns(2)
 
            with col1:
-               # Pie chart: Sleep duration distribution
+               # Sleep duration distribution pie chart
                if 'Sleep Duration' in df.columns:
                    sleep_counts = df['Sleep Duration'].value_counts()
                    fig_sleep = px.pie(
@@ -366,12 +355,25 @@ if uploaded_file is not None:
                else:
                    st.info("Sleep Duration data not available.")
 
+               # Financial stress impact visualization
+               if 'Financial Stress' in df.columns:
+                   fig_financial = px.box(
+                       df,
+                       x='Financial Stress',
+                       y='Depression Risk (%)',
+                       title='Financial Stress Impact on Depression Risk'
+                   )
+                   fig_financial.update_layout(template="plotly_white")
+                   st.plotly_chart(fig_financial, use_container_width=True)
+               else:
+                   st.info("Financial Stress data not available.")
+
            with col2:
-               # Stacked bar: Dietary habits vs risk level
+               # Stacked bar chart for dietary habits vs risk level
                if 'Dietary Habits' in df.columns:
-                   dietary_risk = df.groupby(['Dietary Habits', 'Risk Category']).size().unstack(fill_value=0)
-                   fig_dietary = px.bar(
-                       dietary_risk,
+                   diet_risk_crosstab = pd.crosstab(df['Dietary Habits'], df['Risk Category'])
+                   fig_diet = px.bar(
+                       diet_risk_crosstab,
                        title='Dietary Habits vs Risk Level',
                        color_discrete_map={
                            'Low': '#388E3C',
@@ -379,152 +381,44 @@ if uploaded_file is not None:
                            'High': '#D32F2F'
                        }
                    )
-                   fig_dietary.update_layout(
+                   fig_diet.update_layout(
                        template="plotly_white",
                        xaxis_title="Dietary Habits",
                        yaxis_title="Number of Students"
                    )
-                   st.plotly_chart(fig_dietary, use_container_width=True)
+                   st.plotly_chart(fig_diet, use_container_width=True)
                else:
                    st.info("Dietary Habits data not available.")
 
-           # Financial stress impact visualization
-           col3, col4 = st.columns(2)
-
-           with col3:
-               # Financial stress impact
-               if 'Financial Stress' in df.columns:
-                   # Convert financial stress to numeric if it's categorical
-                   if df['Financial Stress'].dtype == 'object':
-                       # Assume it's in format like 'Low', 'Medium', 'High' or numbers as strings
-                       stress_mapping = {'Low': 1, 'Medium': 5, 'High': 10}
-                       df['Financial Stress Numeric'] = df['Financial Stress'].map(stress_mapping)
-                   else:
-                       df['Financial Stress Numeric'] = df['Financial Stress']
-                   
-                   fig_financial = px.scatter(
-                       df,
-                       x='Financial Stress Numeric',
-                       y='Depression Risk (%)',
-                       color='Risk Category',
-                       color_discrete_map={
-                           'Low': '#388E3C',
-                           'Medium': '#F57C00',
-                           'High': '#D32F2F'
-                       },
-                       title='Financial Stress vs Depression Risk'
-                   )
-                   fig_financial.update_layout(
-                       template="plotly_white",
-                       xaxis_title="Financial Stress Level"
-                   )
-                   st.plotly_chart(fig_financial, use_container_width=True)
-               else:
-                   st.info("Financial Stress data not available.")
-
-           with col4:
-               # Academic pressure impact
-               if 'Academic Pressure' in df.columns:
-                   # Convert academic pressure to numeric if it's categorical
-                   if df['Academic Pressure'].dtype == 'object':
-                       pressure_mapping = {'Low': 1, 'Medium': 5, 'High': 10}
-                       df['Academic Pressure Numeric'] = df['Academic Pressure'].map(pressure_mapping)
-                   else:
-                       df['Academic Pressure Numeric'] = df['Academic Pressure']
-                   
-                   fig_academic = px.scatter(
-                       df,
-                       x='Academic Pressure Numeric',
-                       y='Depression Risk (%)',
-                       color='Risk Category',
-                       color_discrete_map={
-                           'Low': '#388E3C',
-                           'Medium': '#F57C00',
-                           'High': '#D32F2F'
-                       },
-                       title='Academic Pressure vs Depression Risk'
-                   )
-                   fig_academic.update_layout(
-                       template="plotly_white",
-                       xaxis_title="Academic Pressure Level"
-                   )
-                   st.plotly_chart(fig_academic, use_container_width=True)
-               else:
-                   st.info("Academic Pressure data not available.")
-
-           # Gauge charts for critical indicators
-           st.markdown("### Critical Mental Health Indicators")
-           col5, col6 = st.columns(2)
-
-           with col5:
-               # Gauge chart: Percentage of students with suicidal thoughts
+               # Gauge chart for suicidal thoughts percentage
                if 'Have you ever had suicidal thoughts ?' in df.columns:
-                   suicidal_thoughts_yes = df[df['Have you ever had suicidal thoughts ?'] == 'Yes'].shape[0]
-                   suicidal_thoughts_percent = (suicidal_thoughts_yes / len(df)) * 100
+                   suicidal_percent = (df['Have you ever had suicidal thoughts ?'] == 'Yes').mean() * 100
                    
-                   fig_suicidal = go.Figure(go.Indicator(
-                       mode = "gauge+number",
-                       value = suicidal_thoughts_percent,
+                   fig_gauge = go.Figure(go.Indicator(
+                       mode = "gauge+number+delta",
+                       value = suicidal_percent,
                        domain = {'x': [0, 1], 'y': [0, 1]},
                        title = {'text': "Students with Suicidal Thoughts (%)"},
+                       delta = {'reference': 20},
                        gauge = {
                            'axis': {'range': [None, 100]},
                            'bar': {'color': "#D32F2F"},
                            'steps': [
-                               {'range': [0, 10], 'color': "#E8F5E9"},
-                               {'range': [10, 25], 'color': "#FFF3E0"},
-                               {'range': [25, 100], 'color': "#FFEBEE"}
+                               {'range': [0, 20], 'color': "#388E3C"},
+                               {'range': [20, 50], 'color': "#F57C00"},
+                               {'range': [50, 100], 'color': "#D32F2F"}
                            ],
                            'threshold': {
                                'line': {'color': "red", 'width': 4},
-                               'thickness': 0.75,
-                               'value': 25
-                           }
-                       }
-                   ))
-                   fig_suicidal.update_layout(height=300)
-                   st.plotly_chart(fig_suicidal, use_container_width=True)
-               else:
-                   st.info("Suicidal thoughts data not available.")
-
-           with col6:
-               # Gauge chart: Percentage of students with low study satisfaction
-               if 'Study Satisfaction' in df.columns:
-                   # Assume low satisfaction is 4 or below on a 1-10 scale
-                   if df['Study Satisfaction'].dtype == 'object':
-                       # If it's categorical, map to numbers
-                       satisfaction_mapping = {'Very Low': 1, 'Low': 3, 'Medium': 5, 'High': 8, 'Very High': 10}
-                       df['Study Satisfaction Numeric'] = df['Study Satisfaction'].map(satisfaction_mapping)
-                   else:
-                       df['Study Satisfaction Numeric'] = df['Study Satisfaction']
-                   
-                   low_satisfaction = df[df['Study Satisfaction Numeric'] <= 4].shape[0]
-                   low_satisfaction_percent = (low_satisfaction / len(df)) * 100
-                   
-                   fig_satisfaction = go.Figure(go.Indicator(
-                       mode = "gauge+number",
-                       value = low_satisfaction_percent,
-                       domain = {'x': [0, 1], 'y': [0, 1]},
-                       title = {'text': "Students with Low Study Satisfaction (%)"},
-                       gauge = {
-                           'axis': {'range': [None, 100]},
-                           'bar': {'color': "#F57C00"},
-                           'steps': [
-                               {'range': [0, 30], 'color': "#E8F5E9"},
-                               {'range': [30, 50], 'color': "#FFF3E0"},
-                               {'range': [50, 100], 'color': "#FFEBEE"}
-                           ],
-                           'threshold': {
-                               'line': {'color': "orange", 'width': 4},
                                'thickness': 0.75,
                                'value': 50
                            }
                        }
                    ))
-                   fig_satisfaction.update_layout(height=300)
-                   st.plotly_chart(fig_satisfaction, use_container_width=True)
+                   fig_gauge.update_layout(height=400)
+                   st.plotly_chart(fig_gauge, use_container_width=True)
                else:
-                   st.info("Study Satisfaction data not available.")
+                   st.info("Suicidal thoughts data not available.")
 
        # Button to view student list - centered on the page
        col1, col2, col3 = st.columns([1, 1, 1])
