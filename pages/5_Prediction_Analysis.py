@@ -402,7 +402,7 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     if st.button("← Back to Student Details", use_container_width=True):
-        st.switch_page("pages/4_Student_Detail.py")
+        st.switch_page("pages/4_Student_Details_&_Analysis.py")
 
 with col2:
     if st.button("📋 Student List", use_container_width=True):

@@ -279,7 +279,7 @@ if len(available_cols) > 0:
        with col2:
            if st.button("View Full Student Details", use_container_width=True, type="primary"):
                st.session_state["selected_student_index"] = selected_student.name
-               st.switch_page("pages/4_Student_Detail.py")
+               st.switch_page("pages/4_Student_Details_&_Analysis.py")
    
 else:
    st.warning("No students found with the selected filters or required columns are missing.")
