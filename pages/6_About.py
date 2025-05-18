@@ -119,7 +119,7 @@ with col2:
    """, unsafe_allow_html=True)
    
    # Scientific methodology section
-   st.markdown("<h2 class='sub-header'>Scientific Methodology</h2>", unsafe_allow_html=True)
+   st.markdown("<h2 class='sub-header'>Methodology</h2>", unsafe_allow_html=True)
    
    st.markdown("""
    <div class="info-container">
