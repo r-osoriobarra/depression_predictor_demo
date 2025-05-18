@@ -84,13 +84,13 @@ col1, col2, col3 = st.columns([1, 10, 1])
 
 with col2:
    # Sección de Propósito
-   st.markdown("<h2 class='sub-header'>Purpose & Mission</h2>", unsafe_allow_html=True)
+   st.markdown("<h2 class='sub-header'>Purpose</h2>", unsafe_allow_html=True)
    
    st.markdown("""
    <div class="info-container">
-       <p>The Student Depression Risk Prediction System is an advanced, evidence-based tool designed to support university wellness coordinators and mental health professionals in identifying students who may be at risk of developing depression.</p>
-       <p>Our mission is to enable early intervention through intelligent risk assessment, helping institutions provide timely support and resources to students before mental health challenges escalate into more serious conditions.</p>
-       <p>Built with cutting-edge machine learning technology and informed by extensive research in student mental health, this system serves as a bridge between data science and compassionate care in educational environments.</p>
+       <p>This project is developed as an assignment for the ICT619 Artificial Intelligence unit, Semester 1, 2025, at Murdoch University, Western Australia, Australia.</p>
+       <p>The purpose of this web application is to demonstrate a comprehensive depression risk prediction system for university students. This demo is specifically designed for wellbeing services coordinators who seek to proactively address early signs of depression in students through data-driven insights.</p>
+       <p>The system allows coordinators to upload survey data from students, which is then processed by our machine learning model to predict depression risk percentages. By identifying at-risk students early, institutions can implement preventive interventions and provide targeted support before mental health challenges become more severe, ultimately improving student wellbeing and academic success.</p>
    </div>
    """, unsafe_allow_html=True)
    
@@ -149,9 +149,6 @@ with col2:
    - **Psychological Indicators:** Stress coping mechanisms, emotional regulation
    """)
    
-   st.markdown("#### Model Validation:")
-   st.info("Our prediction model has been rigorously tested and validated using cross-validation techniques, achieving high accuracy rates while maintaining sensitivity to diverse student populations and backgrounds.")
-   
    st.markdown("*The system uses this comprehensive information to calculate a risk percentage that indicates the likelihood of a student experiencing depression. This serves as a screening tool to identify students who may benefit from further assessment and support.*")
    
    # Sección de Tecnologías
@@ -197,23 +194,6 @@ with col2:
    
    st.info("The machine learning foundation utilizes Random Forest classifiers, chosen for their excellent performance with mixed data types, interpretability, and robustness against overfitting in healthcare applications.")
    
-   # Sección de Nota Importante
-   st.markdown("<h2 class='sub-header'>Important Usage Guidelines</h2>", unsafe_allow_html=True)
-   
-   st.error("**🚨 Critical Disclaimer**\n\nThis system is a screening and assessment tool, not a diagnostic instrument. High risk scores indicate students who may benefit from further evaluation by qualified mental health professionals.")
-   
-   st.markdown("#### 📋 Best Practices for Implementation")
-   st.markdown("""
-   - Use predictions as one component of a comprehensive mental health strategy
-   - Always combine system insights with direct communication and observation
-   - Ensure all interventions are conducted by qualified professionals
-   - Maintain strict confidentiality and follow institutional privacy protocols
-   - Regularly update and validate the model with new data
-   - Provide appropriate training for all staff using the system
-   """)
-   
-   st.warning("**🔒 Privacy & Ethics**\n\nStudent privacy and confidentiality are paramount. All data processing follows established ethical guidelines for educational technology and healthcare applications. Users must adhere to institutional policies and applicable regulations regarding student data protection.")
-   
    # Sección de Equipo
    st.markdown("<h2 class='sub-header'>Development Team</h2>", unsafe_allow_html=True)
    
@@ -223,9 +203,9 @@ with col2:
        st.markdown("""
        <div class="team-member">
            <h3>Rodrigo Osorio</h3>
-           <p><strong>Lead Developer & Data Scientist</strong></p>
-           <p>Murdoch University Student</p>
-           <p>Specialized in machine learning applications for healthcare and educational technology. Responsible for model development, system architecture, and algorithm optimization.</p>
+           <p><strong>Master of IT Student</strong></p>
+           <p>Murdoch University</p>
+           <p>Email: 35444036@student.murdoch.edu.au</p>
        </div>
        """, unsafe_allow_html=True)
    
@@ -233,47 +213,9 @@ with col2:
        st.markdown("""
        <div class="team-member">
            <h3>Mia Song</h3>
-           <p><strong>UI/UX Designer & Frontend Developer</strong></p>
-           <p>Murdoch University Student</p>
-           <p>Expert in user experience design and interface development. Led the creation of intuitive dashboards and user-friendly interfaces for complex data visualization.</p>
-       </div>
-       """, unsafe_allow_html=True)
-   
-   # Acknowledgments
-   st.markdown("#### Acknowledgments")
-   st.markdown("""
-   We extend our gratitude to:
-   - **Murdoch University** for providing the educational foundation and research environment
-   - **Mental Health Professionals** who provided domain expertise and validation
-   - **Student Affairs Departments** for insights into practical implementation needs
-   - **Open Source Community** for the excellent tools and libraries that made this project possible
-   """)
-   
-   # Información de versión y actualizaciones
-   st.markdown("<h2 class='sub-header'>Version Information</h2>", unsafe_allow_html=True)
-   
-   col1_version, col2_version = st.columns(2)
-   
-   with col1_version:
-       st.markdown("""
-       <div class="feature-container">
-           <h4>📦 Current Version</h4>
-           <p><strong>Version 2.0</strong> - Released December 2024</p>
-           <p>Major update featuring enhanced UI, interactive visualizations, and improved prediction accuracy.</p>
-       </div>
-       """, unsafe_allow_html=True)
-   
-   with col2_version:
-       st.markdown("""
-       <div class="feature-container">
-           <h4>🔄 Recent Updates</h4>
-           <ul>
-               <li>Interactive Plotly charts</li>
-               <li>Enhanced feature contribution analysis</li>
-               <li>Improved user interface design</li>
-               <li>Advanced filtering capabilities</li>
-               <li>Comprehensive documentation</li>
-           </ul>
+           <p><strong>Master of IT Student</strong></p>
+           <p>Murdoch University</p>
+           <p>Email: 35473397@student.murdoch.edu.au</p>
        </div>
        """, unsafe_allow_html=True)
    
@@ -283,20 +225,9 @@ with col2:
    col1_contact, col2_contact = st.columns(2)
    
    with col1_contact:
-       st.markdown("#### 📧 Technical Support")
-       st.markdown("For technical issues, feature requests, or system support:")
-       st.code("support@depressionrisksystem.edu")
-       
-       st.markdown("#### 🏢 Institutional Inquiries") 
-       st.markdown("For implementation guidance, training, or institutional partnerships:")
-       st.code("partnerships@depressionrisksystem.edu")
+       st.markdown("#### 📧 Rodrigo Osorio")
+       st.code("35444036@student.murdoch.edu.au")
    
    with col2_contact:
-       st.markdown("#### 🏛️ Office Location")
-       st.markdown("""
-       University Mental Health Services  
-       Innovation Hub, Building 402  
-       Murdoch University, WA 6150
-       """)
-       
-       st.info("💬 **Response Time:** Technical support inquiries are typically addressed within 24-48 hours during business days.")
+       st.markdown("#### 📧 Mia Song") 
+       st.code("35473397@student.murdoch.edu.au")
