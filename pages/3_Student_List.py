@@ -238,23 +238,16 @@ if len(available_cols) > 0:
            attr for attr in basic_attrs if attr in selected_student.index]
        
        with col1:
-           st.markdown("""
-               <div class="info-container">
-                   <h4 style="margin-top: 0; color: white;">Basic Information</h4>
-               </div>
-           """, unsafe_allow_html=True)
-           
-           # Create content for the container
-           basic_info_content = ""
+           # Create content for Basic Information container
+           basic_info_content = "<h4 style='margin-top: 0; color: white;'>Basic Information</h4>"
            for attr in basic_attrs:
                basic_info_content += f"<p style='margin: 5px 0; color: white;'><strong>{attr}:</strong> {selected_student[attr]}</p>"
            
-           if basic_info_content:
-               st.markdown(f"""
-                   <div class="info-container" style="margin-top: -15px; padding-top: 0;">
-                       {basic_info_content}
-                   </div>
-               """, unsafe_allow_html=True)
+           st.markdown(f"""
+               <div class="info-container">
+                   {basic_info_content}
+               </div>
+           """, unsafe_allow_html=True)
        
        # Mental health indicators if available
        mh_attrs = ["Academic Pressure", "Study Satisfaction", "Sleep Duration",
@@ -262,29 +255,20 @@ if len(available_cols) > 0:
        mh_attrs = [attr for attr in mh_attrs if attr in selected_student.index]
        
        with col2:
-           st.markdown("""
-               <div class="info-container">
-                   <h4 style="margin-top: 0; color: white;">Mental Health Indicators</h4>
-               </div>
-           """, unsafe_allow_html=True)
+           # Create content for Mental Health Indicators container
+           mh_info_content = "<h4 style='margin-top: 0; color: white;'>Mental Health Indicators</h4>"
            
            if mh_attrs:
-               # Create content for the container
-               mh_info_content = ""
                for attr in mh_attrs:
                    mh_info_content += f"<p style='margin: 5px 0; color: white;'><strong>{attr}:</strong> {selected_student[attr]}</p>"
-               
-               st.markdown(f"""
-                   <div class="info-container" style="margin-top: -15px; padding-top: 0;">
-                       {mh_info_content}
-                   </div>
-               """, unsafe_allow_html=True)
            else:
-               st.markdown("""
-                   <div class="info-container" style="margin-top: -15px; padding-top: 0;">
-                       <p style="color: #CCCCCC; font-style: italic;">No detailed mental health indicators available for this student.</p>
-                   </div>
-               """, unsafe_allow_html=True)
+               mh_info_content += "<p style='color: #CCCCCC; font-style: italic;'>No detailed mental health indicators available for this student.</p>"
+           
+           st.markdown(f"""
+               <div class="info-container">
+                   {mh_info_content}
+               </div>
+           """, unsafe_allow_html=True)
        
        # Button to view full details - save the student index for the detail page
        col1, col2, col3 = st.columns([1, 1, 1])
