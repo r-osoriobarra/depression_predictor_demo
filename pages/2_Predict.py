@@ -52,7 +52,7 @@ uploaded_file = st.file_uploader("Upload student data CSV", type=["csv"])
 
 # Function to clean and validate data
 def clean_and_validate_data(df, feature_columns):
-    """Clean and validate the dataframe"""
+    """Clean and validate the dataframe with robust type conversion"""
     # Create a copy to avoid modifying original
     df_clean = df.copy()
     
@@ -64,35 +64,105 @@ def clean_and_validate_data(df, feature_columns):
     # Select only feature columns
     df_clean = df_clean[feature_columns]
     
-    # Handle missing values
+    # Define expected types for each column based on typical training data
+    numeric_columns = [
+        'Age', 'Academic Pressure', 'Work Pressure', 'CGPA', 
+        'Study Satisfaction', 'Job Satisfaction', 'Work/Study Hours', 
+        'Financial Stress'
+    ]
+    
+    categorical_columns = [
+        'Gender', 'City', 'Profession', 'Sleep Duration', 
+        'Dietary Habits', 'Degree', 'Have you ever had suicidal thoughts ?', 
+        'Family History of Mental Illness'
+    ]
+    
+    # Clean each column based on its expected type
+    for col in df_clean.columns:
+        if col in numeric_columns:
+            # Convert to numeric, handling strings that should be numbers
+            if df_clean[col].dtype == 'object':
+                # Try to convert strings to numbers
+                # Handle common string representations like "High", "Medium", "Low"
+                if col == 'Financial Stress':
+                    # Map common string values to numbers
+                    stress_mapping = {
+                        'Low': 1, 'Medium': 5, 'High': 9,
+                        'low': 1, 'medium': 5, 'high': 9,
+                        'Very Low': 1, 'Very High': 10,
+                        'very low': 1, 'very high': 10,
+                        '': 5, 'Unknown': 5, 'unknown': 5
+                    }
+                    
+                    # Apply mapping first
+                    df_clean[col] = df_clean[col].replace(stress_mapping)
+                
+                # Convert to numeric
+                df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
+            
+            # Fill missing numeric values with median
+            if df_clean[col].isnull().any():
+                median_val = df_clean[col].median()
+                if pd.isna(median_val):
+                    # If all values are NaN, use a default based on the column
+                    if col == 'Age':
+                        median_val = 21
+                    elif col == 'CGPA':
+                        median_val = 3.0
+                    elif col in ['Academic Pressure', 'Work Pressure', 'Study Satisfaction', 'Job Satisfaction', 'Financial Stress']:
+                        median_val = 5
+                    elif col == 'Work/Study Hours':
+                        median_val = 6
+                    else:
+                        median_val = 0
+                
+                df_clean[col] = df_clean[col].fillna(median_val)
+            
+            # Ensure the column is numeric
+            df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
+            df_clean[col] = df_clean[col].fillna(0)
+            
+        elif col in categorical_columns:
+            # For categorical columns, ensure they are strings
+            df_clean[col] = df_clean[col].astype(str)
+            
+            # Replace NaN and missing values
+            df_clean[col] = df_clean[col].replace(['nan', 'NaN', 'None', ''], 'Unknown')
+            
+            # Fill any remaining null values
+            if df_clean[col].isnull().any():
+                df_clean[col] = df_clean[col].fillna('Unknown')
+            
+            # Standardize common variations
+            if col == 'Gender':
+                gender_mapping = {
+                    'male': 'Male', 'female': 'Female', 'other': 'Other',
+                    'M': 'Male', 'F': 'Female', 'O': 'Other'
+                }
+                df_clean[col] = df_clean[col].replace(gender_mapping)
+                
+            elif col == 'Have you ever had suicidal thoughts ?':
+                suicide_mapping = {
+                    'yes': 'Yes', 'no': 'No', 'Y': 'Yes', 'N': 'No',
+                    'true': 'Yes', 'false': 'No', '1': 'Yes', '0': 'No'
+                }
+                df_clean[col] = df_clean[col].replace(suicide_mapping)
+                
+            elif col == 'Family History of Mental Illness':
+                family_mapping = {
+                    'yes': 'Yes', 'no': 'No', 'Y': 'Yes', 'N': 'No',
+                    'true': 'Yes', 'false': 'No', '1': 'Yes', '0': 'No'
+                }
+                df_clean[col] = df_clean[col].replace(family_mapping)
+    
+    # Final validation - check for any remaining issues
     for col in df_clean.columns:
         if df_clean[col].dtype == 'object':
-            # For categorical columns, fill with most frequent value or 'Unknown'
-            if df_clean[col].isnull().any():
-                mode_value = df_clean[col].mode()
-                if len(mode_value) > 0:
-                    df_clean[col] = df_clean[col].fillna(mode_value[0])
-                else:
-                    df_clean[col] = df_clean[col].fillna('Unknown')
-            
-            # Convert to string type to ensure consistency
-            df_clean[col] = df_clean[col].astype(str)
+            # Ensure no null values in categorical columns
+            df_clean[col] = df_clean[col].fillna('Unknown')
         else:
-            # For numerical columns, fill with median
-            if df_clean[col].isnull().any():
-                df_clean[col] = df_clean[col].fillna(df_clean[col].median())
-            
-            # Ensure numeric type
-            df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
-    
-    # Final check for any remaining NaN values
-    if df_clean.isnull().any().any():
-        # Fill any remaining NaN with appropriate defaults
-        for col in df_clean.columns:
-            if df_clean[col].dtype == 'object':
-                df_clean[col] = df_clean[col].fillna('Unknown')
-            else:
-                df_clean[col] = df_clean[col].fillna(0)
+            # Ensure no null values in numeric columns
+            df_clean[col] = df_clean[col].fillna(0)
     
     return df_clean, None
 
@@ -438,6 +508,25 @@ if uploaded_file is not None:
         # Read the CSV file
         df = pd.read_csv(uploaded_file)
         
+        # Show data info for debugging
+        with st.expander("📊 Data Information"):
+            st.write(f"**File shape:** {df.shape}")
+            st.write(f"**Columns:** {list(df.columns)}")
+            
+            # Show data types
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Data types:**")
+                for col, dtype in df.dtypes.items():
+                    st.write(f"- {col}: {dtype}")
+            
+            with col2:
+                st.write("**Sample values for key columns:**")
+                if 'Financial Stress' in df.columns:
+                    st.write(f"Financial Stress unique values: {df['Financial Stress'].unique()[:10]}")
+                if 'Sleep Duration' in df.columns:
+                    st.write(f"Sleep Duration unique values: {df['Sleep Duration'].unique()}")
+        
         # Clean and validate the data
         df_clean, error_msg = clean_and_validate_data(df, feature_columns)
         
@@ -473,18 +562,8 @@ if uploaded_file is not None:
         st.error(f"Error processing data: {e}")
         st.write("**Debug information:**")
         st.write(f"Error type: {type(e)}")
-        if uploaded_file is not None:
-            try:
-                test_df = pd.read_csv(uploaded_file)
-                st.write(f"File shape: {test_df.shape}")
-                st.write(f"Columns: {list(test_df.columns)}")
-                st.write(f"Data types:")
-                st.write(test_df.dtypes)
-                if len(test_df) > 0:
-                    st.write("First few rows:")
-                    st.write(test_df.head())
-            except:
-                st.write("Could not read file for debugging")
+        import traceback
+        st.code(traceback.format_exc())
 
 elif "latest_df" in st.session_state:
     df = st.session_state["latest_df"]
