@@ -86,13 +86,6 @@ st.markdown("""
     margin-bottom: 20px;
     background-color: transparent;
 }
-.unified-info-container {
-    border: 2px solid white;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 15px;
-    background-color: transparent;
-}
 .concern-item {
     border: 2px solid;
     border-radius: 10px;
@@ -118,42 +111,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ===== SECTION 1: STUDENT OVERVIEW =====
-# Create two columns: left for risk score, right for basic info
-col_left, col_right = st.columns([1, 1])
-
-with col_left:
-    st.markdown(f"""
-        <div class="main-container">
-            <div style="text-align: center;">
-                <h2 style="margin: 0; color: white; font-size: 2.5rem;">Student {student_display_id}</h2>
-                <div style="margin: 20px 0;">
-                    <h3 style="margin: 10px 0; color: {risk_color}; font-size: 2rem;">{risk_category} Risk</h3>
-                    <p style="font-size: 3.5rem; font-weight: bold; margin: 0; color: {risk_color};">{round(risk_score, 1)}%</p>
-                    <p style="color: #CCCCCC; margin-top: 10px; font-size: 1.2rem;">Depression Risk Score</p>
-                </div>
+st.markdown(f"""
+    <div class="main-container">
+        <div style="text-align: center;">
+            <h2 style="margin: 0; color: white; font-size: 2.5rem;">Student {student_display_id}</h2>
+            <div style="margin: 20px 0;">
+                <h3 style="margin: 10px 0; color: {risk_color}; font-size: 2rem;">{risk_category} Risk</h3>
+                <p style="font-size: 3.5rem; font-weight: bold; margin: 0; color: {risk_color};">{round(risk_score, 1)}%</p>
+                <p style="color: #CCCCCC; margin-top: 10px; font-size: 1.2rem;">Depression Risk Score</p>
             </div>
         </div>
-    """, unsafe_allow_html=True)
-
-with col_right:
-    # Basic student information - Using same style as Student List
-    basic_attrs = ["Gender", "Age", "CGPA", "Degree"]
-    basic_attrs = [attr for attr in basic_attrs if attr in student_data.index]
-    
-    # Create content for Basic Information container (same style as Student List)
-    basic_info_content = "<h4 style='margin-top: 0; margin-bottom: 15px; color: white; border-bottom: 1px solid #444; padding-bottom: 5px;'>Basic Information</h4>"
-    
-    if basic_attrs:
-        for attr in basic_attrs:
-            basic_info_content += f"<p style='margin: 8px 0; color: white;'><strong>{attr}:</strong> {student_data[attr]}</p>"
-    else:
-        basic_info_content += "<p style='color: #CCCCCC; font-style: italic; margin: 8px 0;'>No basic information available.</p>"
-    
-    st.markdown(f"""
-        <div class="unified-info-container">
-            {basic_info_content}
-        </div>
-    """, unsafe_allow_html=True)
+    </div>
+""", unsafe_allow_html=True)
 
 # ===== SECTION 2: RISK FACTORS ANALYSIS =====
 st.markdown("""
