@@ -148,9 +148,6 @@ if len(available_cols) > 0:
     if student_id_col in display_df.columns:
         display_df = display_df.rename(columns={student_id_col: "Student ID"})
     
-    # Add View Details column
-    display_df["View Details"] = "View Details"
-    
     # Function to highlight risk categories with updated thresholds
     def highlight_risk(val):
         if val == "High":
@@ -161,18 +158,11 @@ if len(available_cols) > 0:
             return 'background-color: rgba(56, 142, 60, 0.2); color: #388E3C; font-weight: bold'
         return ''
     
-    # Function to style View Details column
-    def highlight_view_details(val):
-        if val == "View Details":
-            return 'color: #1E88E5; font-weight: bold; text-decoration: underline;'
-        return ''
-    
-    # Apply styling to both Risk Category and View Details columns
+    # Apply styling to Risk Category column
     styled_df = display_df.style.applymap(highlight_risk, subset=["Risk Category"])
-    styled_df = styled_df.applymap(highlight_view_details, subset=["View Details"])
     
-    # Display the table with row selection
-    event = st.dataframe(
+    # Display the table with single checkbox selection
+    selected_rows = st.dataframe(
         styled_df,
         height=400,
         use_container_width=True,
@@ -181,14 +171,14 @@ if len(available_cols) > 0:
     )
     
     # Instructions for users
-    st.info("💡 **How to use:** Click on any row to preview the student details below. Click 'View Full Details' to go to the detailed analysis page.")
+    st.info("💡 **How to use:** Check the checkbox of a row to preview the student details below. Click 'View Full Details' to go to the detailed analysis page.")
     
-    # Handle row selection for preview - FIX HERE
+    # Handle row selection for preview
     selected_student = None
-    if len(event.selection.rows) > 0:
-        # Get the selected row index
-        selected_row_idx = event.selection.rows[0]
-        # Get the actual dataframe index (row name) from display_df
+    if len(selected_rows.selection.rows) > 0:
+        # Get the first (and only due to single-row mode) selected row index
+        selected_row_idx = selected_rows.selection.rows[0]
+        # Get the actual dataframe index from display_df
         selected_student_idx = display_df.index[selected_row_idx]
         # Get the student data from filtered_df
         selected_student = filtered_df.loc[selected_student_idx]
