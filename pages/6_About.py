@@ -1,28 +1,27 @@
-# pages/6_About.py
 import streamlit as st
 import os
 import sys
 
-# Añadir el directorio raíz al path
+# Add the root directory to the path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
-# Importar utils (solo para los estilos)
+# Import utils (only for styles)
 try:
    from utils import set_page_style
 except ImportError:
-   # Función básica de estilo si no se puede importar
+   # Basic style function if import fails
    def set_page_style():
        pass
 
-# Configuración de la página
+# Page configuration
 st.set_page_config(
    page_title="About the System",
    page_icon="ℹ️",
    layout="wide"
 )
 
-# Aplicar estilos personalizados
+# Apply custom styles
 st.markdown("""
 <style>
    .main-header {color:#1E88E5; font-size:42px; font-weight:bold; text-align:center; margin-bottom:30px;}
@@ -76,14 +75,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Título principal
+# Main title
 st.markdown("<h1 class='main-header'>About the Depression Risk Prediction System <span class='version-badge'>v2.0</span></h1>", unsafe_allow_html=True)
 
-# Crear columnas para centrar el contenido
+# Create columns to center the content
 col1, col2, col3 = st.columns([1, 10, 1])
 
 with col2:
-   # Sección de Propósito
+   # Purpose section
    st.markdown("<h2 class='sub-header'>Purpose</h2>", unsafe_allow_html=True)
    
    st.markdown("""
@@ -94,7 +93,7 @@ with col2:
    </div>
    """, unsafe_allow_html=True)
    
-   # Sección de Funcionalidades
+   # Key features section
    st.markdown("<h2 class='sub-header'>Key Features & Capabilities</h2>", unsafe_allow_html=True)
    
    st.markdown("""
@@ -129,7 +128,7 @@ with col2:
    </div>
    """, unsafe_allow_html=True)
    
-   # Sección de Metodología
+   # Scientific methodology section
    st.markdown("<h2 class='sub-header'>Scientific Methodology</h2>", unsafe_allow_html=True)
    
    st.markdown("""
@@ -151,7 +150,7 @@ with col2:
    
    st.markdown("*The system uses this comprehensive information to calculate a risk percentage that indicates the likelihood of a student experiencing depression. This serves as a screening tool to identify students who may benefit from further assessment and support.*")
    
-   # Sección de Tecnologías
+   # Technology stack section
    st.markdown("<h2 class='sub-header'>Technology Stack</h2>", unsafe_allow_html=True)
    
    st.markdown("Built with modern, industry-standard technologies for optimal performance, scalability, and maintainability:")
@@ -191,11 +190,9 @@ with col2:
            <span class="tech-badge">SHAP Analysis</span>
        </div>
        """, unsafe_allow_html=True)
-   
-   st.info("The machine learning foundation utilizes Random Forest classifiers, chosen for their excellent performance with mixed data types, interpretability, and robustness against overfitting in healthcare applications.")
-   
-   # Sección de Equipo
-   st.markdown("<h2 class='sub-header'>Development Team</h2>", unsafe_allow_html=True)
+      
+   # Contact and support section
+   st.markdown("<h2 class='sub-header'>Contact & Support</h2>", unsafe_allow_html=True)
    
    col1_team, col2_team = st.columns(2)
    
@@ -205,7 +202,7 @@ with col2:
            <h3>Rodrigo Osorio</h3>
            <p><strong>Master of IT Student</strong></p>
            <p>Murdoch University</p>
-           <p>Email: 35444036@student.murdoch.edu.au</p>
+           <p>📧 35444036@student.murdoch.edu.au</p>
        </div>
        """, unsafe_allow_html=True)
    
@@ -215,19 +212,6 @@ with col2:
            <h3>Mia Song</h3>
            <p><strong>Master of IT Student</strong></p>
            <p>Murdoch University</p>
-           <p>Email: 35473397@student.murdoch.edu.au</p>
+           <p>📧 35473397@student.murdoch.edu.au</p>
        </div>
        """, unsafe_allow_html=True)
-   
-   # Sección de Contacto y Soporte
-   st.markdown("<h2 class='sub-header'>Contact & Support</h2>", unsafe_allow_html=True)
-   
-   col1_contact, col2_contact = st.columns(2)
-   
-   with col1_contact:
-       st.markdown("#### 📧 Rodrigo Osorio")
-       st.code("35444036@student.murdoch.edu.au")
-   
-   with col2_contact:
-       st.markdown("#### 📧 Mia Song") 
-       st.code("35473397@student.murdoch.edu.au")
