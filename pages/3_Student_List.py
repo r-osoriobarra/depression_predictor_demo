@@ -1,4 +1,3 @@
-# pages/3_StudentList.py
 import streamlit as st
 import pandas as pd
 from utils import set_page_style, check_login, check_data

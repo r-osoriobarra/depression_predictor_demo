@@ -1,4 +1,3 @@
-# pages/4_Student_Detail.py
 import streamlit as st
 import pandas as pd
 import pickle
