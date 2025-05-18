@@ -86,6 +86,13 @@ st.markdown("""
     margin-bottom: 20px;
     background-color: transparent;
 }
+.unified-info-container {
+    border: 2px solid white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    background-color: transparent;
+}
 .concern-item {
     border: 2px solid;
     border-radius: 10px;
@@ -129,26 +136,21 @@ with col_left:
     """, unsafe_allow_html=True)
 
 with col_right:
-    # Basic student information
+    # Basic student information - Using same style as Student List
     basic_attrs = ["Gender", "Age", "CGPA", "Degree"]
     basic_attrs = [attr for attr in basic_attrs if attr in student_data.index]
     
-    # Create content for Basic Information container
-    basic_info_content = "<h3 style='margin-top: 0; margin-bottom: 20px; color: white; text-align: center; font-size: 2rem;'>Basic Information</h3>"
+    # Create content for Basic Information container (same style as Student List)
+    basic_info_content = "<h4 style='margin-top: 0; margin-bottom: 15px; color: white; border-bottom: 1px solid #444; padding-bottom: 5px;'>Basic Information</h4>"
     
     if basic_attrs:
         for attr in basic_attrs:
-            basic_info_content += f"""
-                <div style="margin-bottom: 15px; text-align: center;">
-                    <p style="margin: 0; color: #CCCCCC; font-size: 1rem;">{attr}</p>
-                    <p style="margin: 5px 0 0 0; color: white; font-size: 1.5rem; font-weight: bold;">{student_data[attr]}</p>
-                </div>
-            """
+            basic_info_content += f"<p style='margin: 8px 0; color: white;'><strong>{attr}:</strong> {student_data[attr]}</p>"
     else:
-        basic_info_content += "<p style='color: #CCCCCC; font-style: italic; text-align: center;'>No basic information available.</p>"
+        basic_info_content += "<p style='color: #CCCCCC; font-style: italic; margin: 8px 0;'>No basic information available.</p>"
     
     st.markdown(f"""
-        <div class="main-container">
+        <div class="unified-info-container">
             {basic_info_content}
         </div>
     """, unsafe_allow_html=True)
