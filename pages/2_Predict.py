@@ -101,6 +101,14 @@ if uploaded_file is not None:
         else:
             percentage_color = "#388E3C"  # Green for low
 
+        # Determine color for average risk
+        if avg_risk > 70:
+            avg_risk_color = "#D32F2F"  # Red for high
+        elif avg_risk >= 30:
+            avg_risk_color = "#F57C00"  # Orange for medium
+        else:
+            avg_risk_color = "#388E3C"  # Green for low
+
         # Custom container with white border and no background
         st.markdown("""
         <style>
@@ -143,7 +151,7 @@ if uploaded_file is not None:
             st.markdown(f"""
             <div class="metrics-container">
                 <div class="custom-metric">
-                    <div class="metric-value" style="color: white;">{round(avg_risk, 1)}%</div>
+                    <div class="metric-value" style="color: {avg_risk_color};">{round(avg_risk, 1)}%</div>
                     <div class="metric-label">Average Risk</div>
                 </div>
             </div>
@@ -154,7 +162,7 @@ if uploaded_file is not None:
             <div class="metrics-container">
                 <div class="custom-metric">
                     <div class="metric-value" style="color: white;">{high_risk_count}</div>
-                    <div class="metric-label">High Risk Students <span style="color: {percentage_color};">({high_risk_percent:.1f}%)</span></div>
+                    <div class="metric-label">Number of High Risk Students <span style="color: {percentage_color};">({high_risk_percent:.1f}%)</span></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -189,9 +197,12 @@ if uploaded_file is not None:
                 st.plotly_chart(fig_hist, use_container_width=True)
 
             with col2:
-                # Interactive pie chart of risk categories
+                # Interactive pie chart of risk categories with correct color mapping
                 risk_counts = df['Risk Category'].value_counts()
-                colors = ['#388E3C', '#F57C00', '#D32F2F']  # Green, Orange, Red
+                
+                # Create color mapping based on category name
+                color_map = {'Low': '#388E3C', 'Medium': '#F57C00', 'High': '#D32F2F'}
+                colors = [color_map[cat] for cat in risk_counts.index]
                 
                 fig_pie = px.pie(
                     values=risk_counts.values,
@@ -283,33 +294,6 @@ if uploaded_file is not None:
             else:
                 st.info("Academic data not available for visualization.")
 
-        # Display student data preview
-        st.markdown("<h2 class='sub-header'>Student Data Preview</h2>",
-                    unsafe_allow_html=True)
-
-        # Format risk column with colors
-        def highlight_risk(val):
-            if val == "High":
-                return 'background-color: rgba(211, 47, 47, 0.2); color: #D32F2F; font-weight: bold'
-            elif val == "Medium":
-                return 'background-color: rgba(245, 124, 0, 0.2); color: #F57C00; font-weight: bold'
-            elif val == "Low":
-                return 'background-color: rgba(56, 142, 60, 0.2); color: #388E3C; font-weight: bold'
-            return ''
-
-        # Create display columns for better readability
-        display_cols = ["Gender", "Age", "CGPA",
-                        "Depression Risk (%)", "Risk Category"]
-        display_cols = [col for col in display_cols if col in df.columns]
-
-        # Apply styling
-        display_df = df[display_cols].sort_values(
-            "Depression Risk (%)", ascending=False)
-        styled_df = display_df.style.applymap(
-            highlight_risk, subset=["Risk Category"])
-
-        st.dataframe(styled_df, height=400)
-
         # Add download option
         csv = df.to_csv(index=False)
         st.download_button(
@@ -318,6 +302,12 @@ if uploaded_file is not None:
             file_name="student_risk_analysis.csv",
             mime="text/csv",
         )
+
+        # Button to navigate to student list - centered
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            if st.button("View Student List", use_container_width=True, type="primary"):
+                st.switch_page("pages/3_Student_List.py")
 
     except Exception as e:
         st.error(f"Error processing data: {e}")
@@ -340,6 +330,14 @@ elif "latest_df" in st.session_state:
     else:
         percentage_color = "#388E3C"  # Green for low
 
+    # Determine color for average risk
+    if avg_risk > 70:
+        avg_risk_color = "#D32F2F"  # Red for high
+    elif avg_risk >= 30:
+        avg_risk_color = "#F57C00"  # Orange for medium
+    else:
+        avg_risk_color = "#388E3C"  # Green for low
+
     # Display key metrics
     st.markdown("<h2 class='sub-header'>Key Metrics</h2>",
                 unsafe_allow_html=True)
@@ -360,7 +358,7 @@ elif "latest_df" in st.session_state:
         st.markdown(f"""
         <div class="metrics-container">
             <div class="custom-metric">
-                <div class="metric-value" style="color: white;">{round(avg_risk, 1)}%</div>
+                <div class="metric-value" style="color: {avg_risk_color};">{round(avg_risk, 1)}%</div>
                 <div class="metric-label">Average Risk</div>
             </div>
         </div>
@@ -371,34 +369,22 @@ elif "latest_df" in st.session_state:
         <div class="metrics-container">
             <div class="custom-metric">
                 <div class="metric-value" style="color: white;">{high_risk_count}</div>
-                <div class="metric-label">High Risk Students <span style="color: {percentage_color};">({high_risk_percent:.1f}%)</span></div>
+                <div class="metric-label">Number of High Risk Students <span style="color: {percentage_color};">({high_risk_percent:.1f}%)</span></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-    # Display student data preview
-    st.markdown("<h2 class='sub-header'>Student Data Preview</h2>",
-                unsafe_allow_html=True)
+    # Add download option
+    csv = df.to_csv(index=False)
+    st.download_button(
+        label="Download Data as CSV",
+        data=csv,
+        file_name="student_risk_analysis.csv",
+        mime="text/csv",
+    )
 
-    # Format risk column with colors (same as above)
-    def highlight_risk(val):
-        if val == "High":
-            return 'background-color: rgba(211, 47, 47, 0.2); color: #D32F2F; font-weight: bold'
-        elif val == "Medium":
-            return 'background-color: rgba(245, 124, 0, 0.2); color: #F57C00; font-weight: bold'
-        elif val == "Low":
-            return 'background-color: rgba(56, 142, 60, 0.2); color: #388E3C; font-weight: bold'
-        return ''
-
-    # Create display columns for better readability
-    display_cols = ["Gender", "Age", "CGPA",
-                    "Depression Risk (%)", "Risk Category"]
-    display_cols = [col for col in display_cols if col in df.columns]
-
-    # Apply styling
-    display_df = df[display_cols].sort_values(
-        "Depression Risk (%)", ascending=False)
-    styled_df = display_df.style.applymap(
-        highlight_risk, subset=["Risk Category"])
-
-    st.dataframe(styled_df, height=400)
+    # Button to navigate to student list - centered
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("View Student List", use_container_width=True, type="primary"):
+            st.switch_page("pages/3_Student_List.py")
