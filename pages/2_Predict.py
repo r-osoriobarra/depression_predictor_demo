@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from utils import set_page_style, check_login
 import sys
+import numpy as np
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
@@ -50,9 +51,9 @@ with st.expander("View Required Columns"):
 
 uploaded_file = st.file_uploader("Upload student data CSV", type=["csv"])
 
-# Function to clean and validate data
+# Function to clean and validate data with more robust approach
 def clean_and_validate_data(df, feature_columns):
-    """Clean and validate the dataframe with robust type conversion"""
+    """Clean and validate the dataframe with extremely robust type conversion"""
     # Create a copy to avoid modifying original
     df_clean = df.copy()
     
@@ -64,109 +65,138 @@ def clean_and_validate_data(df, feature_columns):
     # Select only feature columns
     df_clean = df_clean[feature_columns]
     
-    # Define expected types for each column based on typical training data
-    numeric_columns = [
-        'Age', 'Academic Pressure', 'Work Pressure', 'CGPA', 
-        'Study Satisfaction', 'Job Satisfaction', 'Work/Study Hours', 
-        'Financial Stress'
-    ]
+    # Handle each column individually based on the training data patterns
+    # Numeric columns - convert everything to numbers
+    numeric_cols = ['Age', 'Academic Pressure', 'Work Pressure', 'CGPA', 
+                    'Study Satisfaction', 'Job Satisfaction', 'Work/Study Hours', 
+                    'Financial Stress']
     
-    categorical_columns = [
-        'Gender', 'City', 'Profession', 'Sleep Duration', 
-        'Dietary Habits', 'Degree', 'Have you ever had suicidal thoughts ?', 
-        'Family History of Mental Illness'
-    ]
-    
-    # Clean each column based on its expected type
-    for col in df_clean.columns:
-        if col in numeric_columns:
-            # Convert to numeric, handling any string values
+    for col in numeric_cols:
+        if col in df_clean.columns:
+            # Convert to numeric, replacing any non-numeric with NaN
             df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
             
-            # Fill missing numeric values with median
-            if df_clean[col].isnull().any():
-                median_val = df_clean[col].median()
-                if pd.isna(median_val):
-                    # If all values are NaN, use a default based on the column
-                    if col == 'Age':
-                        median_val = 21
-                    elif col == 'CGPA':
-                        median_val = 3.0
-                    elif col in ['Academic Pressure', 'Work Pressure', 'Study Satisfaction', 'Job Satisfaction', 'Financial Stress']:
-                        median_val = 5
-                    elif col == 'Work/Study Hours':
-                        median_val = 6
-                    else:
-                        median_val = 0
-                
-                df_clean[col] = df_clean[col].fillna(median_val)
+            # Fill NaN values with reasonable defaults
+            if col == 'Age':
+                df_clean[col] = df_clean[col].fillna(22)
+            elif col == 'CGPA':
+                df_clean[col] = df_clean[col].fillna(3.0)
+            elif col in ['Academic Pressure', 'Work Pressure', 'Study Satisfaction', 'Job Satisfaction', 'Financial Stress']:
+                df_clean[col] = df_clean[col].fillna(5)
+            elif col == 'Work/Study Hours':
+                df_clean[col] = df_clean[col].fillna(6)
             
-            # Ensure the column is numeric
-            df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
+            # Ensure no NaN remains
             df_clean[col] = df_clean[col].fillna(0)
-            
-        elif col in categorical_columns:
-            # For categorical columns, ensure they are strings
+    
+    # Categorical columns - handle each one specifically
+    categorical_cols = ['Gender', 'City', 'Profession', 'Sleep Duration', 
+                       'Dietary Habits', 'Degree', 'Have you ever had suicidal thoughts ?', 
+                       'Family History of Mental Illness']
+    
+    for col in categorical_cols:
+        if col in df_clean.columns:
+            # Convert to string first
             df_clean[col] = df_clean[col].astype(str)
             
-            # Clean up Sleep Duration values that might have extra quotes
+            # Handle specific columns
             if col == 'Sleep Duration':
+                # Remove quotes and clean up
                 df_clean[col] = df_clean[col].str.replace("'", "", regex=False)
                 df_clean[col] = df_clean[col].str.strip()
                 
-                # Standardize sleep duration values
+                # Map to standard values
                 sleep_mapping = {
                     '5-6 hours': '6-8 hours',
-                    '7-8 hours': '6-8 hours', 
+                    '7-8 hours': '6-8 hours',
                     'Less than 5 hours': 'Less than 6 hours',
-                    'More than 8 hours': 'More than 8 hours'
+                    'More than 8 hours': 'More than 8 hours',
+                    'nan': '6-8 hours',
+                    'None': '6-8 hours',
+                    '': '6-8 hours'
                 }
                 df_clean[col] = df_clean[col].replace(sleep_mapping)
-            
-            # Replace NaN and missing values
-            df_clean[col] = df_clean[col].replace(['nan', 'NaN', 'None', ''], 'Unknown')
-            
-            # Fill any remaining null values
-            if df_clean[col].isnull().any():
-                df_clean[col] = df_clean[col].fillna('Unknown')
-            
-            # Standardize common variations
-            if col == 'Gender':
+                
+                # Ensure only valid values
+                valid_sleep = ['Less than 6 hours', '6-8 hours', 'More than 8 hours']
+                df_clean[col] = df_clean[col].apply(lambda x: x if x in valid_sleep else '6-8 hours')
+                
+            elif col == 'Gender':
                 gender_mapping = {
-                    'male': 'Male', 'female': 'Female', 'other': 'Other',
-                    'M': 'Male', 'F': 'Female', 'O': 'Other'
+                    'Male': 'Male', 'Female': 'Female', 'male': 'Male', 'female': 'Female',
+                    'M': 'Male', 'F': 'Female', 'nan': 'Male', 'None': 'Male', '': 'Male'
                 }
                 df_clean[col] = df_clean[col].replace(gender_mapping)
+                valid_genders = ['Male', 'Female']
+                df_clean[col] = df_clean[col].apply(lambda x: x if x in valid_genders else 'Male')
                 
-            elif col == 'Have you ever had suicidal thoughts ?':
-                suicide_mapping = {
-                    'yes': 'Yes', 'no': 'No', 'Y': 'Yes', 'N': 'No',
-                    'true': 'Yes', 'false': 'No', '1': 'Yes', '0': 'No'
-                }
-                df_clean[col] = df_clean[col].replace(suicide_mapping)
-                
-            elif col == 'Family History of Mental Illness':
-                family_mapping = {
-                    'yes': 'Yes', 'no': 'No', 'Y': 'Yes', 'N': 'No',
-                    'true': 'Yes', 'false': 'No', '1': 'Yes', '0': 'No'
-                }
-                df_clean[col] = df_clean[col].replace(family_mapping)
+            elif col == 'Profession':
+                # All should be Student for this model
+                df_clean[col] = 'Student'
                 
             elif col == 'Dietary Habits':
                 dietary_mapping = {
-                    'Moderate': 'Average',
-                    'Poor': 'Unhealthy'
+                    'Healthy': 'Healthy', 'Unhealthy': 'Unhealthy', 'Average': 'Average',
+                    'Moderate': 'Average', 'Poor': 'Unhealthy', 'Good': 'Healthy',
+                    'nan': 'Average', 'None': 'Average', '': 'Average'
                 }
                 df_clean[col] = df_clean[col].replace(dietary_mapping)
+                valid_diets = ['Healthy', 'Unhealthy', 'Average']
+                df_clean[col] = df_clean[col].apply(lambda x: x if x in valid_diets else 'Average')
+                
+            elif col == 'Have you ever had suicidal thoughts ?':
+                suicide_mapping = {
+                    'Yes': 'Yes', 'No': 'No', 'yes': 'Yes', 'no': 'No',
+                    'Y': 'Yes', 'N': 'No', '1': 'Yes', '0': 'No',
+                    'True': 'Yes', 'False': 'No', 'true': 'Yes', 'false': 'No',
+                    'nan': 'No', 'None': 'No', '': 'No'
+                }
+                df_clean[col] = df_clean[col].replace(suicide_mapping)
+                valid_suicide = ['Yes', 'No']
+                df_clean[col] = df_clean[col].apply(lambda x: x if x in valid_suicide else 'No')
+                
+            elif col == 'Family History of Mental Illness':
+                family_mapping = {
+                    'Yes': 'Yes', 'No': 'No', 'yes': 'Yes', 'no': 'No',
+                    'Y': 'Yes', 'N': 'No', '1': 'Yes', '0': 'No',
+                    'True': 'Yes', 'False': 'No', 'true': 'Yes', 'false': 'No',
+                    'nan': 'No', 'None': 'No', '': 'No'
+                }
+                df_clean[col] = df_clean[col].replace(family_mapping)
+                valid_family = ['Yes', 'No']
+                df_clean[col] = df_clean[col].apply(lambda x: x if x in valid_family else 'No')
+                
+            elif col == 'Degree':
+                # Keep common degree values, map others to most similar
+                degree_mapping = {
+                    'Bachelors': 'Bachelors', 'Masters': 'Masters', 'PhD': 'PhD',
+                    'Bachelor': 'Bachelors', 'Master': 'Masters', 'Doctorate': 'PhD',
+                    'BSc': 'Bachelors', 'MSc': 'Masters', 'BA': 'Bachelors', 'MA': 'Masters',
+                    'B.Tech': 'Bachelors', 'M.Tech': 'Masters', 'B.Pharm': 'Bachelors',
+                    'nan': 'Bachelors', 'None': 'Bachelors', '': 'Bachelors'
+                }
+                df_clean[col] = df_clean[col].replace(degree_mapping)
+                valid_degrees = ['Bachelors', 'Masters', 'PhD']
+                df_clean[col] = df_clean[col].apply(lambda x: x if x in valid_degrees else 'Bachelors')
+                
+            elif col == 'City':
+                # For cities, just clean up and use common ones
+                df_clean[col] = df_clean[col].replace(['nan', 'None', ''], 'Other')
+                
+            # Final cleanup - ensure no NaN or problematic values
+            df_clean[col] = df_clean[col].fillna('Unknown')
+            df_clean[col] = df_clean[col].replace(['nan', 'None', ''], 'Unknown')
     
-    # Final validation - check for any remaining issues
+    # Final check - ensure all data is clean
     for col in df_clean.columns:
         if df_clean[col].dtype == 'object':
-            # Ensure no null values in categorical columns
-            df_clean[col] = df_clean[col].fillna('Unknown')
+            # Remove any remaining problematic characters
+            df_clean[col] = df_clean[col].astype(str).str.strip()
+            df_clean[col] = df_clean[col].replace(['nan', 'None', ''], 'Unknown')
         else:
-            # Ensure no null values in numeric columns
+            # Ensure no NaN in numeric columns
             df_clean[col] = df_clean[col].fillna(0)
+            df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce').fillna(0)
     
     return df_clean, None
 
@@ -513,11 +543,11 @@ if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
         
         # Show data info for debugging
-        with st.expander("📊 Data Information"):
+        with st.expander("📊 Data Information (Before Cleaning)"):
             st.write(f"**File shape:** {df.shape}")
             st.write(f"**Columns:** {list(df.columns)}")
             
-            # Show data types
+            # Show data types and sample values
             col1, col2 = st.columns(2)
             with col1:
                 st.write("**Data types:**")
@@ -525,11 +555,11 @@ if uploaded_file is not None:
                     st.write(f"- {col}: {dtype}")
             
             with col2:
-                st.write("**Sample values for key columns:**")
-                if 'Financial Stress' in df.columns:
-                    st.write(f"Financial Stress unique values: {df['Financial Stress'].unique()[:10]}")
-                if 'Sleep Duration' in df.columns:
-                    st.write(f"Sleep Duration unique values: {df['Sleep Duration'].unique()}")
+                st.write("**Sample values for problematic columns:**")
+                for col in ['Financial Stress', 'Sleep Duration', 'Dietary Habits']:
+                    if col in df.columns:
+                        unique_vals = df[col].unique()[:5]  # Show first 5 unique values
+                        st.write(f"{col}: {unique_vals}")
         
         # Clean and validate the data
         df_clean, error_msg = clean_and_validate_data(df, feature_columns)
@@ -537,6 +567,23 @@ if uploaded_file is not None:
         if error_msg:
             st.error(error_msg)
             st.stop()
+        
+        # Show cleaned data info
+        with st.expander("📊 Data Information (After Cleaning)"):
+            st.write(f"**Cleaned data shape:** {df_clean.shape}")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Cleaned data types:**")
+                for col, dtype in df_clean.dtypes.items():
+                    st.write(f"- {col}: {dtype}")
+            
+            with col2:
+                st.write("**Cleaned sample values:**")
+                for col in ['Financial Stress', 'Sleep Duration', 'Dietary Habits']:
+                    if col in df_clean.columns:
+                        unique_vals = df_clean[col].unique()
+                        st.write(f"{col}: {unique_vals}")
         
         # Apply model to predict depression risk
         X_transformed = preprocessor.transform(df_clean)
@@ -568,6 +615,17 @@ if uploaded_file is not None:
         st.write(f"Error type: {type(e)}")
         import traceback
         st.code(traceback.format_exc())
+        
+        # Try to show what the cleaned data looks like
+        try:
+            df_test = pd.read_csv(uploaded_file)
+            df_clean_test, _ = clean_and_validate_data(df_test, feature_columns)
+            st.write("**Cleaned data sample:**")
+            st.write(df_clean_test.head())
+            st.write("**Cleaned data info:**")
+            st.write(df_clean_test.dtypes)
+        except:
+            st.write("Could not debug cleaned data")
 
 elif "latest_df" in st.session_state:
     df = st.session_state["latest_df"]
