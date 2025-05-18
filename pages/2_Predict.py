@@ -50,6 +50,52 @@ with st.expander("View Required Columns"):
 
 uploaded_file = st.file_uploader("Upload student data CSV", type=["csv"])
 
+# Function to clean and validate data
+def clean_and_validate_data(df, feature_columns):
+    """Clean and validate the dataframe"""
+    # Create a copy to avoid modifying original
+    df_clean = df.copy()
+    
+    # Check for missing columns
+    missing_cols = [col for col in feature_columns if col not in df_clean.columns]
+    if missing_cols:
+        return None, f"Missing required columns: {', '.join(missing_cols)}"
+    
+    # Select only feature columns
+    df_clean = df_clean[feature_columns]
+    
+    # Handle missing values
+    for col in df_clean.columns:
+        if df_clean[col].dtype == 'object':
+            # For categorical columns, fill with most frequent value or 'Unknown'
+            if df_clean[col].isnull().any():
+                mode_value = df_clean[col].mode()
+                if len(mode_value) > 0:
+                    df_clean[col] = df_clean[col].fillna(mode_value[0])
+                else:
+                    df_clean[col] = df_clean[col].fillna('Unknown')
+            
+            # Convert to string type to ensure consistency
+            df_clean[col] = df_clean[col].astype(str)
+        else:
+            # For numerical columns, fill with median
+            if df_clean[col].isnull().any():
+                df_clean[col] = df_clean[col].fillna(df_clean[col].median())
+            
+            # Ensure numeric type
+            df_clean[col] = pd.to_numeric(df_clean[col], errors='coerce')
+    
+    # Final check for any remaining NaN values
+    if df_clean.isnull().any().any():
+        # Fill any remaining NaN with appropriate defaults
+        for col in df_clean.columns:
+            if df_clean[col].dtype == 'object':
+                df_clean[col] = df_clean[col].fillna('Unknown')
+            else:
+                df_clean[col] = df_clean[col].fillna(0)
+    
+    return df_clean, None
+
 # Function to process and display data
 def display_data_visualizations(df):
     # Calculate metrics
@@ -389,25 +435,27 @@ def display_data_visualizations(df):
 # Main logic
 if uploaded_file is not None:
     try:
+        # Read the CSV file
         df = pd.read_csv(uploaded_file)
-
-        # Check if all required columns are present
-        missing_cols = [
-            col for col in feature_columns if col not in df.columns]
-        if missing_cols:
-            st.error(f"Missing required columns: {', '.join(missing_cols)}")
+        
+        # Clean and validate the data
+        df_clean, error_msg = clean_and_validate_data(df, feature_columns)
+        
+        if error_msg:
+            st.error(error_msg)
             st.stop()
-
+        
         # Apply model to predict depression risk
-        X = df[feature_columns]
-        X_transformed = preprocessor.transform(X)
-        df["Depression Risk (%)"] = model.predict_proba(
-            X_transformed)[:, 1] * 100
+        X_transformed = preprocessor.transform(df_clean)
+        risk_probabilities = model.predict_proba(X_transformed)[:, 1] * 100
+        
+        # Add predictions to original dataframe
+        df["Depression Risk (%)"] = risk_probabilities
 
         # Create risk categories
         df['Risk Category'] = pd.cut(
             df["Depression Risk (%)"],
-            bins=[0, 30, 60, 100],
+            bins=[0, 30, 70, 100],
             labels=["Low", "Medium", "High"]
         )
 
@@ -423,7 +471,20 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Error processing data: {e}")
-        st.exception(e)
+        st.write("**Debug information:**")
+        st.write(f"Error type: {type(e)}")
+        if uploaded_file is not None:
+            try:
+                test_df = pd.read_csv(uploaded_file)
+                st.write(f"File shape: {test_df.shape}")
+                st.write(f"Columns: {list(test_df.columns)}")
+                st.write(f"Data types:")
+                st.write(test_df.dtypes)
+                if len(test_df) > 0:
+                    st.write("First few rows:")
+                    st.write(test_df.head())
+            except:
+                st.write("Could not read file for debugging")
 
 elif "latest_df" in st.session_state:
     df = st.session_state["latest_df"]
