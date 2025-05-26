@@ -119,6 +119,13 @@ test_score = model.score(X_test_transformed, y_test)
 print(f"\nTrain accuracy: {train_score:.4f}")
 print(f"Test accuracy: {test_score:.4f}")
 
+# VERIFY: Check if model has feature_importances_
+if hasattr(model, 'feature_importances_'):
+    print("✅ Model has feature_importances_ attribute")
+else:
+    print("❌ Model does NOT have feature_importances_ attribute")
+    print(f"Model type: {type(model)}")
+
 # Display feature importance
 if hasattr(model, 'feature_importances_'):
     importances = model.feature_importances_
@@ -132,6 +139,8 @@ if hasattr(model, 'feature_importances_'):
     
     print(f"\nTop 10 most important features:")
     print(importance_df.head(10))
+else:
+    print("Skipping feature importance analysis - model doesn't support it")
 
 # Create the 'model' directory if it doesn't exist
 os.makedirs('model', exist_ok=True)
