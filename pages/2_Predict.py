@@ -385,23 +385,79 @@ def display_data_visualizations(df):
         if st.button("View Student List", use_container_width=True):
             st.switch_page("pages/3_Student_List.py")
 
-# Main logic
+# Main logic - FIXED VERSION
 if uploaded_file is not None:
     try:
         df = pd.read_csv(uploaded_file)
+        
+        print(f"Uploaded CSV columns: {list(df.columns)}")
+        print(f"Expected feature columns: {feature_columns}")
+
+        # DATA CLEANING - Apply the same cleaning as in training
+        print("\n--- APPLYING DATA CLEANING ---")
+        
+        # Remove columns that don't contribute to prediction
+        columns_to_remove = ['City', 'Work Pressure', 'Job Satisfaction', 'id']
+        for col in columns_to_remove:
+            if col in df.columns:
+                print(f"Removing '{col}' column. Shape before: {df.shape}")
+                df = df.drop(col, axis=1)
+                print(f"Shape after removing '{col}': {df.shape}")
+
+        # Filter to only students BUT KEEP THE PROFESSION COLUMN FOR NOW
+        if 'Profession' in df.columns:
+            print(f"Filtering only 'Student' in Profession. Rows before: {len(df)}")
+            df = df[df['Profession'] == 'Student']
+            print(f"Rows after filtering 'Student': {len(df)}")
+            
+            # NOW remove the Profession column since all rows are 'Student'
+            if len(df) > 0:  # Only if we have data left
+                print(f"Removing 'Profession' column after filtering. Shape before: {df.shape}")
+                df = df.drop('Profession', axis=1)
+                print(f"Shape after removing 'Profession': {df.shape}")
+            else:
+                st.error("No student data found in the uploaded file.")
+                st.stop()
+
+        # Remove problematic values from Sleep Duration and Financial Stress
+        columns_to_clean = ['Sleep Duration', 'Financial Stress']
+        for col in columns_to_clean:
+            if col in df.columns:
+                print(f"Cleaning problematic values from {col}. Rows before: {len(df)}")
+                df = df[~df[col].isin(['Others', '?', 'unknown'])]
+                print(f"Rows after cleaning {col}: {len(df)}")
+
+        # Remove the Depression column if it exists (since we're predicting it)
+        if 'Depression' in df.columns:
+            df = df.drop('Depression', axis=1)
+            print("Removed 'Depression' column from prediction data")
+
+        print(f"Final cleaned data shape: {df.shape}")
+        print(f"Final cleaned columns: {list(df.columns)}")
 
         # Check if all required columns are present
-        missing_cols = [
-            col for col in feature_columns if col not in df.columns]
+        missing_cols = [col for col in feature_columns if col not in df.columns]
+        extra_cols = [col for col in df.columns if col not in feature_columns]
+        
         if missing_cols:
             st.error(f"Missing required columns: {', '.join(missing_cols)}")
+            st.info(f"Expected columns: {', '.join(feature_columns)}")
+            st.info(f"Found columns: {', '.join(df.columns)}")
             st.stop()
+            
+        if extra_cols:
+            st.warning(f"Extra columns found (will be ignored): {', '.join(extra_cols)}")
+            # Remove extra columns
+            df = df[feature_columns]
 
         # Apply model to predict depression risk
         X = df[feature_columns]
+        
+        # Ensure the order of columns matches training
+        X = X[feature_columns]
+        
         X_transformed = preprocessor.transform(X)
-        df["Depression Risk (%)"] = model.predict_proba(
-            X_transformed)[:, 1] * 100
+        df["Depression Risk (%)"] = model.predict_proba(X_transformed)[:, 1] * 100
 
         # Create risk categories with updated thresholds (30-70 instead of 30-60)
         df['Risk Category'] = pd.cut(
@@ -414,8 +470,7 @@ if uploaded_file is not None:
         st.session_state["latest_df"] = df
 
         # Show success message
-        st.success(
-            f"Data loaded successfully. {len(df)} student records processed.")
+        st.success(f"Data loaded successfully. {len(df)} student records processed.")
 
         # Display visualizations
         display_data_visualizations(df)
@@ -423,6 +478,11 @@ if uploaded_file is not None:
     except Exception as e:
         st.error(f"Error processing data: {e}")
         st.exception(e)
+        # Add debugging information
+        if 'df' in locals():
+            st.write("DataFrame columns:", list(df.columns))
+        if 'feature_columns' in locals():
+            st.write("Expected feature columns:", feature_columns)
 
 elif "latest_df" in st.session_state:
     df = st.session_state["latest_df"]

@@ -1,4 +1,4 @@
-# train_and_export_model.py - CORRECTED VERSION
+# train_and_export_model.py - FIXED VERSION
 import os
 import pickle
 import pandas as pd
@@ -16,19 +16,30 @@ print(f"Loading dataset from {dataset_path}...")
 df = pd.read_csv(dataset_path)
 
 print(f"Original dataset shape: {df.shape}")
+print(f"Original columns: {list(df.columns)}")
 
 # DATA CLEANING - Remove irrelevant columns and filter data
 print("\n--- DATA CLEANING ---")
 
 # Remove columns that don't contribute to prediction
-columns_to_remove = ['City', 'Work Pressure', 'Job Satisfaction', 'Profession', 'id']
+columns_to_remove = ['City', 'Work Pressure', 'Job Satisfaction', 'id']
 for col in columns_to_remove:
     if col in df.columns:
         print(f"Removing '{col}' column. Shape before: {df.shape}")
         df = df.drop(col, axis=1)
         print(f"Shape after removing '{col}': {df.shape}")
 
-# Filter to only students (already done by removing Profession column)
+# Filter to only students BUT KEEP THE PROFESSION COLUMN FOR NOW
+if 'Profession' in df.columns:
+    print(f"Filtering only 'Student' in Profession. Rows before: {len(df)}")
+    df = df[df['Profession'] == 'Student']
+    print(f"Rows after filtering 'Student': {len(df)}")
+    
+    # NOW remove the Profession column since all rows are 'Student'
+    print(f"Removing 'Profession' column after filtering. Shape before: {df.shape}")
+    df = df.drop('Profession', axis=1)
+    print(f"Shape after removing 'Profession': {df.shape}")
+
 # Remove problematic values from Sleep Duration and Financial Stress
 columns_to_clean = ['Sleep Duration', 'Financial Stress']
 for col in columns_to_clean:
@@ -38,6 +49,7 @@ for col in columns_to_clean:
         print(f"Rows after cleaning {col}: {len(df)}")
 
 print(f"\nFinal dataset shape after cleaning: {df.shape}")
+print(f"Final columns for training: {list(df.columns)}")
 
 # Separate features (X) and target (y)
 X = df.drop('Depression', axis=1)
@@ -123,4 +135,5 @@ print("Files saved:")
 print("- model/depression_model.pkl")
 print("- model/preprocessor.pkl") 
 print("- model/feature_columns.pkl")
+print(f"\nFeature columns saved: {feature_columns}")
 print("\nYou can now use these files in your Streamlit application.")
