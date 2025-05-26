@@ -21,7 +21,7 @@ print(f"Original columns: {list(df.columns)}")
 # DATA CLEANING - Remove irrelevant columns and filter data
 print("\n--- DATA CLEANING ---")
 
-# Remove columns that don't contribute to prediction
+# Remove columns that don't contribute to prediction (but KEEP Age!)
 columns_to_remove = ['City', 'Work Pressure', 'Job Satisfaction', 'id']
 for col in columns_to_remove:
     if col in df.columns:
@@ -50,6 +50,25 @@ for col in columns_to_clean:
 
 print(f"\nFinal dataset shape after cleaning: {df.shape}")
 print(f"Final columns for training: {list(df.columns)}")
+
+# VERIFICATION: Check that we have the expected columns
+expected_final_columns = [
+    'Gender', 'Age', 'Academic Pressure', 'CGPA', 'Study Satisfaction', 
+    'Sleep Duration', 'Dietary Habits', 'Degree', 
+    'Have you ever had suicidal thoughts ?', 'Work/Study Hours', 
+    'Financial Stress', 'Family History of Mental Illness', 'Depression'
+]
+
+actual_columns = list(df.columns)
+print(f"Expected columns: {expected_final_columns}")
+print(f"Actual columns: {actual_columns}")
+
+# Check if Age is present
+if 'Age' not in df.columns:
+    print("❌ ERROR: Age column is missing!")
+    exit(1)
+else:
+    print("✅ Age column is present")
 
 # Separate features (X) and target (y)
 X = df.drop('Depression', axis=1)

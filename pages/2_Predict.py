@@ -23,13 +23,28 @@ if not check_login():
 # Load model, preprocessor and columns
 @st.cache_resource
 def load_model():
-    with open("model/depression_model.pkl", "rb") as f_model:
-        model = pickle.load(f_model)
-    with open("model/preprocessor.pkl", "rb") as f_pre:
-        preprocessor = pickle.load(f_pre)
-    with open("model/feature_columns.pkl", "rb") as f_cols:
-        feature_columns = pickle.load(f_cols)
-    return model, preprocessor, feature_columns
+    try:
+        with open("model/depression_model.pkl", "rb") as f_model:
+            model = pickle.load(f_model)
+        with open("model/preprocessor.pkl", "rb") as f_pre:
+            preprocessor = pickle.load(f_pre)
+        with open("model/feature_columns.pkl", "rb") as f_cols:
+            feature_columns = pickle.load(f_cols)
+        
+        # Load dataset info if available
+        try:
+            with open("model/dataset_info.pkl", "rb") as f_info:
+                dataset_info = pickle.load(f_info)
+                st.sidebar.success(f"Model trained on: {os.path.basename(dataset_info['dataset_used'])}")
+                st.sidebar.info(f"Expected features: {len(feature_columns)}")
+        except FileNotFoundError:
+            st.sidebar.warning("Dataset info not available")
+            
+        return model, preprocessor, feature_columns
+    except Exception as e:
+        st.error(f"Error loading model files: {e}")
+        st.info("Make sure you have trained the model first by running: python train_model_universal.py")
+        st.stop()
 
 try:
     model, preprocessor, feature_columns = load_model()
@@ -396,6 +411,10 @@ if uploaded_file is not None:
         # DATA CLEANING - Apply the same cleaning as in training
         print("\n--- APPLYING DATA CLEANING ---")
         
+        # Store original columns for debugging
+        original_columns = list(df.columns)
+        print(f"Original columns: {original_columns}")
+        
         # Remove columns that don't contribute to prediction
         columns_to_remove = ['City', 'Work Pressure', 'Job Satisfaction', 'id']
         for col in columns_to_remove:
@@ -407,6 +426,8 @@ if uploaded_file is not None:
         # Filter to only students BUT KEEP THE PROFESSION COLUMN FOR NOW
         if 'Profession' in df.columns:
             print(f"Filtering only 'Student' in Profession. Rows before: {len(df)}")
+            original_profession_values = df['Profession'].unique()
+            print(f"Available profession values: {original_profession_values}")
             df = df[df['Profession'] == 'Student']
             print(f"Rows after filtering 'Student': {len(df)}")
             
@@ -423,6 +444,8 @@ if uploaded_file is not None:
         columns_to_clean = ['Sleep Duration', 'Financial Stress']
         for col in columns_to_clean:
             if col in df.columns:
+                unique_values = df[col].unique()
+                print(f"Unique values in {col}: {unique_values}")
                 print(f"Cleaning problematic values from {col}. Rows before: {len(df)}")
                 df = df[~df[col].isin(['Others', '?', 'unknown'])]
                 print(f"Rows after cleaning {col}: {len(df)}")
@@ -434,6 +457,37 @@ if uploaded_file is not None:
 
         print(f"Final cleaned data shape: {df.shape}")
         print(f"Final cleaned columns: {list(df.columns)}")
+        
+        # CRÍTICO: Verificar que Age esté presente
+        if 'Age' not in df.columns:
+            st.error("❌ La columna 'Age' se perdió durante el procesamiento!")
+            st.write("Columnas disponibles:", list(df.columns))
+            st.write("Columnas originales:", original_columns)
+            st.stop()
+        
+        # Verificar que tenemos las columnas correctas
+        expected_columns_after_cleaning = [
+            'Gender', 'Age', 'Academic Pressure', 'CGPA', 'Study Satisfaction',
+            'Sleep Duration', 'Dietary Habits', 'Degree',
+            'Have you ever had suicidal thoughts ?', 'Work/Study Hours',
+            'Financial Stress', 'Family History of Mental Illness'
+        ]
+        
+        current_columns = list(df.columns)
+        print(f"Expected columns after cleaning: {expected_columns_after_cleaning}")
+        print(f"Current columns after cleaning: {current_columns}")
+        
+        # Show differences
+        missing_expected = set(expected_columns_after_cleaning) - set(current_columns)
+        extra_current = set(current_columns) - set(expected_columns_after_cleaning)
+        
+        if missing_expected:
+            st.error(f"Missing expected columns: {missing_expected}")
+        if extra_current:
+            st.warning(f"Extra columns found: {extra_current}")
+            
+        if missing_expected:
+            st.stop()
 
         # Check if all required columns are present
         missing_cols = [col for col in feature_columns if col not in df.columns]
@@ -453,10 +507,19 @@ if uploaded_file is not None:
         # Apply model to predict depression risk
         X = df[feature_columns]
         
+        # DEBUGGING: Print shapes and first few rows
+        print(f"X shape before transform: {X.shape}")
+        print(f"X columns: {list(X.columns)}")
+        print(f"Expected feature_columns: {feature_columns}")
+        print(f"X first row:\n{X.iloc[0] if len(X) > 0 else 'No data'}")
+        
         # Ensure the order of columns matches training
         X = X[feature_columns]
         
+        print(f"About to transform with preprocessor...")
         X_transformed = preprocessor.transform(X)
+        print(f"X_transformed shape: {X_transformed.shape}")
+        
         df["Depression Risk (%)"] = model.predict_proba(X_transformed)[:, 1] * 100
 
         # Create risk categories with updated thresholds (30-70 instead of 30-60)
